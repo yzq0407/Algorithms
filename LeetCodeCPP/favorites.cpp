@@ -4,6 +4,8 @@
 #include <iostream>
 #include <climits>
 #include <set>
+#include <queue>
+#include <unordered_set>
 #include "accessories.h"
 
 
@@ -280,7 +282,217 @@ public:
         return true;
         //-----------run time 202 ms beats 79.65% ---------------
     }
-};
+       /* 309 Best Time to Buy and Sell Stock with Cooldown */
+/*     Say you have an array for which the ith element is the price of a given stock on day i. */
+
+/*     Design an algorithm to find the maximum profit. You may complete as many transactions as you like */
+/*     (ie, buy one and sell one share of the stock multiple times) with the following restrictions: */
+
+/*     You may not engage in multiple transactions at the same time (ie, you must sell the stock before you buy again). */
+/*     After you sell your stock, you cannot buy stock on next day. (ie, cooldown 1 day) */
+    int maxProfit(vector<int>& prices) {
+        //basic idea is to maintain two dp array, one is we current do not hold stock in hand(sell)
+        //the other one is we hold stock currently in hand(buy), then we should have the substructure:
+        //sell[i] = max(sell[i - 1], buy[i - 1] + prices[i])
+        //buy[i] = max(buy[i - 1], sell[i - 2] - prices[i])
+        if (prices.size() < 2) return 0;
+        vector<int> sell(prices.size(), 0), buy(prices.size(), 0);
+        //first day the buy entry must be -prices[0]
+        buy[0] = -prices[0];
+        for (int i = 1; i < prices.size(); ++i) {
+            sell[i] = max(sell[i - 1], buy[i - 1] + prices[i]);
+            buy[i] = max(buy[i - 1], sell[max(i - 2, 0)] - prices[i]);
+        }
+        return sell[prices.size() - 1];
+        //--------run time 6ms beats 26.99%-----------
+    }
+
+    /* 300. Longest Increasing Subsequence */
+    /* Given an unsorted array of integers, find the length of longest increasing subsequence. */
+    vector<int> lengthOfLIS(vector<int>& nums) { 
+        //maintain a tail array to keep all the possible length's tail
+        //follow up:
+        //if we want to recover the sequence, how to do it?
+        //we can have an array to keep the previous pointer, each time we insert a new element, we record it's previous
+        //element (in this way, we cannot keep the real value in the tail's array but their index in the original array
+        vector<int> tails, predecessor(nums.size(), 0);
+        for (int i = 0; i < nums.size(); i++) {
+            //if it is greater than the current end of tails, we added to the end
+            if (tails.empty() || nums[i] > nums[tails.back()]) {
+                tails.push_back(i);
+                predecessor[i] = tails.size() == 1? -1: tails[tails.size() - 2];
+            }
+            else {
+                //binary search
+                int low = 0;
+                int high = tails.size() - 1;
+                while (low <= high) {
+                    int mid = (low + high) >> 1;
+                    if (nums[tails[mid]] >= nums[i])   high = mid - 1;
+                    else    low = mid + 1;
+                }
+                //high + 1 is the right possition
+                tails[high + 1] = i;
+                predecessor[tails[high + 1]] = high == -1? -1: tails[high];
+            }
+        }
+        vector<int> sequence(tails.size(), 0);
+        for (int i = tails.size() - 1, current = tails.back(); i >= 0; i--) {
+            sequence[i] = nums[current];
+            current = predecessor[current];
+        }
+        return sequence;
+        // ------ run time 3 ms  beats 65.12% ---------
+    }
+
+    /* 212. Word Search II */
+    /* Given a 2D board and a list of words from the dictionary, find all words in the board. */
+
+    /* Each word must be constructed from letters of sequentially adjacent cell, where "adjacent" */
+    /* cells are those horizontally or vertically neighboring. The same letter cell may not be used more than once in a word. */
+    vector<string> findWords(vector<vector<char>>& board, vector<string> &words) {
+        //here we need to use trie tree to insert all the words such that we can efficiently do dfs
+        //1. we do not need a full trie, trienode is fast enough
+        //2. each node must maintain a field called word, if it is terminating node, we set it to be the string we insert
+        //3. everytime we find the string, we set the word field to be empty string
+        vector<string> res;
+        if (board.size() == 0 || words.size() == 0) return res;
+        TrieNode* root = nullptr;
+        for (auto word: words) {
+            root = put(root, word, 0);
+        }
+        vector<int> dx({-1, 1, 0, 0});
+        vector<int> dy({0, 0, -1, 1});
+  
+        for (size_t i = 0; i < board.size(); ++i) {
+            for (size_t j = 0; j < board[0].size(); ++j) {
+                dfs(res, root -> children[board[i][j] - 'a'], board, i, j, dx, dy);
+            }
+        }
+        //do the cleanup
+        cleanup(root);
+        return res;
+        //----------run time 138ms beats 40.73%---------
+    }
+    
+    //helper functions and struct
+    struct TrieNode {
+        vector<TrieNode*> children;
+        string word;
+        TrieNode(): children(26, nullptr) {}
+    };
+
+    TrieNode* put(TrieNode* root, const string& word, int pos) {
+        if (!root)  root = new TrieNode();
+        if (pos == word.size()) root -> word = word;
+        else {
+            root -> children[word[pos] - 'a'] = put(root -> children[word[pos] - 'a'], word, pos + 1);
+        }
+        return root;
+    }
+
+    void dfs(vector<string> &res, TrieNode *node, vector<vector<char>> &board, 
+            int x, int y, const vector<int>& dx, const vector<int>& dy) {
+        if (!node)  return;
+        if (node -> word.size()) {
+            res.push_back(node -> word);
+            node -> word = "";
+        }
+        char temp = board[x][y];
+        board[x][y] = '#';
+        for (size_t d = 0; d < 4; ++d) {
+            int nx = dx[d] + x;
+            int ny = dy[d] + y;
+            if (nx >= 0 && nx < board.size() && ny >= 0 && ny < board[0].size() && board[nx][ny] != '#') {
+                dfs(res, node -> children[board[nx][ny] - 'a'], board, nx, ny, dx, dy);
+            }
+        }
+        board[x][y] = temp;
+    }
+
+    void cleanup(TrieNode* root) {
+        if (!root)  return;
+        for (int i = 0; i < 26; ++i)    cleanup(root -> children[i]);
+        delete(root);
+    }
+
+/*     128. Longest Consecutive Sequence */
+/*     Given an unsorted array of integers, find the length of the longest consecutive elements sequence. */
+    int longestConsecutive(vector<int> &nums) {
+        //idea: keep a map that takes (start, end) and (end, start) as KV pairs
+        //each time we see a new value, makesure it did show up before, and check is there a end or start that is one
+        //number away, there could be four situations
+        if (nums.size() == 0)   return 0;
+        //the map must be 
+        unordered_map<int, int> intervals;
+        unordered_set<int> visited;
+        int maxSequence = 1;
+        for (int num: nums) {
+            if (visited.find(num) != visited.end()) continue;
+            visited.insert(num);
+            int head = num, end = num;
+            if (num != INT_MIN && intervals.find(num - 1) != intervals.end()) {
+                head = intervals[num - 1];
+                intervals.erase(intervals[num - 1]);
+                intervals.erase(num - 1);
+            }
+            if (num != INT_MAX && intervals.find(num + 1) != intervals.end()) {
+                end = intervals[num + 1];
+                intervals.erase(intervals[num + 1]);
+                intervals.erase(num + 1);
+            }
+            maxSequence = max(end - head + 1, maxSequence);
+            intervals.insert({head, end});
+            intervals.insert({end, head});
+        }
+        return maxSequence;
+        //----------run time 43ms beats 11.82%-----------
+    }
+    
+
+    /* 286 Walls and Gates */
+    /* You are given a m x n 2D grid initialized with these three possible values. */
+
+    /* -1 - A wall or an obstacle. */
+    /* 0 - A gate. */
+    /* INF - Infinity means an empty room. We use the value 231 - 1 = 2147483647 to */ 
+    /* represent INF as you may assume that the distance to a gate is less than 2147483647. */
+    /* Fill each empty room with the distance to its nearest gate. */ 
+    /* If it is impossible to reach a gate, it should be filled with INF. */
+    void wallsAndGates(vector<vector<int>>& rooms) {
+        //Idea is to use bfs, but we want to search it at the same time, that is
+        //inject all the gate into the queue and each time exact a layer of it
+        queue<pair<int, int>> q;
+        for (int i = 0; i < rooms.size(); ++i) {
+            for (int j = 0; j < rooms[0].size(); ++j) {
+                if (rooms[i][j] == 0) q.push(make_pair(i, j));
+            }
+        }
+        int dx[] = {-1, 1, 0, 0};
+        int dy[] = {0, 0, -1, 1};
+        int dist = 1;
+        while (!q.empty()) {
+            size_t size = q.size();
+            for (size_t i = 0; i < size; ++i) {
+                auto pos = q.front();
+                q.pop();
+                for (int d = 0; d < 4; ++d) {
+                    int nx = dx[d] + pos.first, ny = dy[d] + pos.second;
+                    if (nx >= 0 && nx < rooms.size() && ny >= 0 && ny < rooms[0].size() && rooms[nx][ny] == INT_MAX) {
+                        rooms[nx][ny] = dist;
+                        q.push(make_pair(nx, ny));
+                    }
+                }
+            }
+            ++dist;
+        }
+        //-------run time 119ms   beats 76.15%---------
+    }
+
+
+
+
+}; 
 
 /*     308 Range Sum Query 3D - Mutable */
 /*     Given a 2D matrix matrix, find the sum of the elements inside the rectangle defined by its upper left corner (row1, col1) and lower right */ 
@@ -470,6 +682,10 @@ int main() {
     vector<vector<int>> rect2({{1, 1, 2, 3}, {1, 3, 2, 4}, {3, 1, 4, 2}, {3, 2, 4, 4}});
     vector<vector<int>> rect3({{0, 0, 1, 1}, {0, 1, 3, 2}, {1, 0, 2, 2}});
     Solution s;
-    cout << s.isRectangleCover2(rect3) << endl;
+    vector<int> nums({1, 2, 3, 4, 5});
+    for (int seq: s.lengthOfLIS(nums)) {
+        cout << seq << " ";
+    }
+    cout << endl;
 }
 
