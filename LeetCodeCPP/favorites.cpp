@@ -2,12 +2,17 @@
 #include <unordered_map>
 #include <algorithm>
 #include <iostream>
+#include <climits>
+#include <set>
 #include "accessories.h"
+
 
 
 using namespace std;
 //contains all the solution functions for the favoriates questions
 class Solution {
+public:
+    /* 354. Russain Doll Envelopes */
     /* You have a number of envelopes with widths and heights given as a pair of integers (w, h). */
     /* One envelope can fit into another if and only if both the width and height of one envelope */ 
     /* is greater than the width and height of the other envelope. */
@@ -135,10 +140,146 @@ class Solution {
     //----running time 33ms, beats 89.18%------//
 
 
+/* 282. Expression Add Operators */
+/* Given a string that contains only digits 0-9 and a target value, */ 
+/* return all possibilities to add binary operators (not unary) +, -, or * between the digits so they evaluate to the target value. */
 
+    vector<string> addOperators(string num, int target) {
+        //using dfs to search and see if a expression is evaluated as the given value
+        //since * and / has a higher precedence than + and -, we need to record the last value we've seen and determine whether to update that
+        vector<string> res;
+        dfs(res, "", num, 0, 0, 0, target);
+        return res;
+    }
 
+    //helper function to to the dfs, expression is passed by value to do efficient backtracking
+    void dfs(vector<string> &res, string expression, const string& nums, int pos, 
+            long current, long last_num, int target) {
+        if (pos == nums.size() && current == target) {
+            res.push_back(expression);
+            return;
+        }
+        if (pos == nums.size()) return;
+        for (int len = 1; len <= min((int)nums.size() - pos, 10); ++len) {
+            if (nums[pos] == '0' && len > 1)    break;
+            long next = stol(nums.substr(pos, len));
+            if (next > INT_MAX) break;
+            if (pos == 0) {
+                dfs(res, to_string(next), nums, len, next, next, target);
+                continue;
+            }
+            //we will need to update 
+            dfs(res, expression + "+" + to_string(next), nums, pos + len, current + next, next, target);
+            dfs(res, expression + "-" + to_string(next), nums, pos + len, current - next, -next, target);
+            //this is the important step, pay attention to the way that current is being updated to keep in pace
+            dfs(res, expression + "*" + to_string(next), nums, pos + len, current - last_num + last_num * next, last_num * next, target);
+        }
+    }
 
+    /* 391. Perfect Rectangle */
+    /* Given N axis-aligned rectangles where N > 0, determine if they all together form an exact cover of a */
+    /* rectangular region. */
 
+    /* Each rectangle is represented as a bottom-left point and a top-right point. For example, a unit square */
+    /* is represented as [1,1,2,2]. (coordinate of bottom-left point is (1, 1) and top-right point is (2, 2)). */
+    bool isRectangleCover(vector<vector<int>> &rectangles) {
+        //To check if it is a exact cover of rectangle, it needs to satisfy two conditions:
+        //1. The sum of the areas of all the rectangles must be equal to the big square (suppose it is a square)
+        //2. There is no overlapping happening within the whole range
+        //So my solution is just based on these two observations
+        //crit_pts represents all the critical points in xmin or xmax corresponding to the interval [ymin, ymax]
+        //the first attribute represent the index in the rectangle, the second represent in(0) or out(2)
+        vector<pair<int, int>> crit_pts;
+        crit_pts.reserve(rectangles.size() * 2);
+        int xmin = INT_MAX, ymin = xmin, ymax = INT_MIN, xmax = ymax, totalArea = 0;
+        for (int i = 0; i < rectangles.size(); ++i) {
+            xmin = min(rectangles[i][0], xmin);
+            ymin = min(rectangles[i][1], ymin);
+            xmax = max(rectangles[i][2], xmax);
+            ymax=  max(rectangles[i][3], ymax);
+            totalArea += (rectangles[i][2] - rectangles[i][0]) * (rectangles[i][3] - rectangles[i][1]);
+            crit_pts.push_back(make_pair(i, 0));
+            crit_pts.push_back(make_pair(i, 2));
+        }
+        //if it does not satisfy the first condition, return false
+        if (totalArea != (xmax - xmin) * (ymax - ymin)) return false;
+        //sort based on the two criteria: smaller x value precede greater, when a tie happens, put out point before
+        //in point
+        sort(crit_pts.begin(), crit_pts.end(), [&rectangles] (const pair<int, int> &p1, const pair<int, int> &p2)
+            -> bool {
+                int x1 = rectangles[p1.first][p1.second], x2 = rectangles[p2.first][p2.second];
+                return x1 != x2? x1 < x2: p2.second < p1.second;
+            });
+        //scan each point, maintain a treeset that can quickly search whether there is overlapping
+        auto compare = [&rectangles](int a, int b) -> bool {
+            return rectangles[a][1] < rectangles[b][1];
+        };
+        set<int, decltype(compare)> scan_line(compare);
+        for (auto crit_pt: crit_pts) {
+            if (crit_pt.second == 0) {
+                //in point, need to do a set insert, first check if there is any overlap
+                if (scan_line.upper_bound(crit_pt.first) != scan_line.end()) {
+                    int interval_start = rectangles[*scan_line.upper_bound(crit_pt.first)][1];
+                    if (interval_start < rectangles[crit_pt.first][3])  return false;
+                }
+                if (scan_line.upper_bound(crit_pt.first) != scan_line.begin()) {
+                    int interval_end = rectangles[*--scan_line.upper_bound(crit_pt.first)][3];
+                    if (interval_end > rectangles[crit_pt.first][1])    return false;
+                }
+                //do insert
+                scan_line.insert(crit_pt.first);
+            }
+            else {
+                //out point, do a erase operation to remove the point
+                scan_line.erase(crit_pt.first);
+            }
+        }
+        return true;
+        // ------ run time 426 ms beats 22.81% -------
+    }
+
+    //we can see that the above solution is kind of slow, and it runs O(nlogn)
+    //there is actually a better solution which runs in O(n), it only needs to do two things
+    //1. exactly the same as we did in the first solution, assert the area is equal
+    //2. all the indices must be even except the ones in four corners
+    //Implementation becomes trivial
+    bool isRectangleCover2 (vector<vector<int>> &rectangles) {
+        using coordinates = pair<int, int>;
+        auto hash = [] (const coordinates& p) {return (size_t)p.first *31 + p.second;};
+        auto equal = [] (const coordinates& p1, const coordinates& p2) {
+            return p1.first == p2.first && p1.second == p2.second;};
+        unordered_map<coordinates, int, decltype(hash), decltype(equal)> corner_count(rectangles.size(), hash, equal);
+
+        int xmin = INT_MAX, ymin = xmin, ymax = INT_MIN, xmax = ymax, totalArea = 0;
+        for (int i = 0; i < rectangles.size(); ++i) {
+            xmin = min(rectangles[i][0], xmin);
+            ymin = min(rectangles[i][1], ymin);
+            xmax = max(rectangles[i][2], xmax);
+            ymax=  max(rectangles[i][3], ymax);
+            totalArea += (rectangles[i][2] - rectangles[i][0]) * (rectangles[i][3] - rectangles[i][1]);
+            //insert four corners
+            for (int x = 0; x <= 2; x +=2) {
+                for (int y = 1; y <= 3; y += 2) {
+                    auto coord = make_pair(rectangles[i][x], rectangles[i][y]);
+                    if (corner_count.find(coord) == corner_count.end()) corner_count[coord] = 1;
+                    else    ++corner_count[coord];
+                }
+            }
+        }
+        if (totalArea != (xmax - xmin) * (ymax - ymin)) return false;
+        if (corner_count[make_pair(xmin, ymin)] != 1 || corner_count[make_pair(xmax, ymin)] != 1 ||
+                corner_count[make_pair(xmax, ymax)] != 1 || corner_count[make_pair(xmin, ymax)] != 1)
+            return false;
+        corner_count.erase(make_pair(xmin, ymin));
+        corner_count.erase(make_pair(xmin, ymax));
+        corner_count.erase(make_pair(xmax, ymax));
+        corner_count.erase(make_pair(xmax, ymin));
+        for (auto it = corner_count.begin(); it != corner_count.end(); ++it) {
+            if (it -> second % 2)   return false;
+        }
+        return true;
+        //-----------run time 202 ms beats 79.65% ---------------
+    }
 };
 
 /*     308 Range Sum Query 3D - Mutable */
@@ -325,13 +466,10 @@ class NumMatrix_Quad {
 
 
 int main() {
-    vector<vector<int>> matrix({{3, 0, 1, 4, 2}, {5, 6, 3, 2, 1}, {1, 2, 0, 1, 5}, {4, 1, 0, 1, 7}, {1, 0, 3, 0, 5}});
-    NumMatrix_Quad nq(matrix);
-    NumMatrix n(matrix);
-    cout << "correct: " << n.sumRegion(2, 1, 4, 3) << endl;
-    cout << nq.sumRegion(2, 1, 4, 3) << endl;
-    nq.update(3, 2, 2);
-
-    cout << nq.sumRegion(2, 1, 4, 3) << endl;
+    vector<vector<int>> rect({{1, 1, 3, 3}, {3, 1, 4, 2}, {3, 2, 4, 4}, {1, 3, 2, 4}, {2, 3, 3, 4}});
+    vector<vector<int>> rect2({{1, 1, 2, 3}, {1, 3, 2, 4}, {3, 1, 4, 2}, {3, 2, 4, 4}});
+    vector<vector<int>> rect3({{0, 0, 1, 1}, {0, 1, 3, 2}, {1, 0, 2, 2}});
+    Solution s;
+    cout << s.isRectangleCover2(rect3) << endl;
 }
 
