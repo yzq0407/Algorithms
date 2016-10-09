@@ -489,8 +489,132 @@ public:
         //-------run time 119ms   beats 76.15%---------
     }
 
+/*     275. H-Index II */
+/*     Follow up for H-Index: What if the citations array is sorted in ascending order? */ 
+/*     Could you optimize your algorithm? */
+    int hIndex(vector<int>& citations) {
+        //we are looking for the lowest i such that citations n - i <= citations[i]
+        //keep the invariant property such that citations[high] <= n - i
+        if (citations.size() == 0)  return 0;
+        int low = 0;
+        int high = citations.size() - 1;
+        while (low <= high) {
+            int mid = (low + high) >> 1;
+            if (citations[mid] >= citations.size() - mid)   high = mid - 1;
+            else    low = mid + 1;
+        }
+        return citations.size() - high - 1;
+        // -----run time 9ms, beats 46.72%--------
+    }
 
 
+/*     324. Wiggle Sort II */
+/*     Given an unsorted array nums, reorder it such that nums[0] < nums[1] > nums[2] < nums[3].... */
+    void wiggleSort_naive(vector<int> &nums) {
+        //trivial solution, sort the nums, and then order it using another array
+        vector<int> copy = nums;
+        sort(copy.begin(), copy.end());
+        for (int medium = nums.size() / 2, i = 0; medium >= 0; medium--, i += 2) {
+            nums[i] = copy[medium];
+        }
+        for (int medium = nums.size() - 1, i = 1; medium > nums.size() / 2 && i < nums.size(); medium--, i += 2) {
+            nums[i] = copy[medium];
+        }
+        //------run time 136ms-- beats 21.76%-------
+    }
+
+    void wiggleSort_refined(vector<int> &nums) {
+        //In order to solve it in O(1) space, we need a virtual indexing technique
+        //eventually we want our final array to be like this:
+        //M   M   S   S
+        //  L   L   M
+        //where M means median, S means small and L means large
+        //so in a sorted array, we want to map their original index into their final index
+        //odd length case
+        //prev    0    1    2    3    4    5    6
+        //after   6    4    2    0    5    3    1
+        //even length case
+        //prev    0    1    2    3    4    5
+        //after   4    2    0    5    3    1
+        //the function is (2 * (len - i - 1) + 1) % (n | 1)
+        //note that this function works for both odd and even number length
+        sort(nums.begin(), nums.end());
+        //now what we need to do is to keep on doing swapping, since it is a closed cycle
+        //we only need to do len - 1 times
+        long long flag = (1 << nums.size()) - 1;
+        while (flag) {
+            int mask = (flag & -flag);
+            flag ^= mask;
+            cout << mask << endl;
+            int idx = log2(mask);
+            int current = idx;
+            cout << idx << endl;
+            do {
+                int to = virtual_index(current, nums.size());
+                swap(nums, idx, current);
+                current = to;
+                flag &= ~(1 << current);
+            } while (current != idx);
+        }
+        //-----this will fail the large case since it will exceeds 64 bits-----//
+    }
+
+    int virtual_index(int idx, int len) {
+        //this function implement the above index transformation
+        cout << "idx: " << idx << " mapped to " << (2 * (len - idx - 1) + 1) % (len | 1) << endl;
+        return (2 * (len - idx - 1) + 1) % (len | 1);
+    }
+
+    void swap(vector<int> &nums, int i, int j) {
+        int temp = nums[i];
+        nums[i] = nums[j];
+        nums[j] = temp;
+    }
+
+    void wiggleSort_perfect(vector<int> &nums) {
+        //note that we do not need to know the whole sequence of array, we only need to know the median
+        //specifically, the (len / 2 - 1) element in the sorted position
+        //after we find this element, we can simply say that the element < median will be partitioned to the 
+        //small part(keep a virtual index pointer) and any element > median will be partitioned to the 
+        //large part(keep a virtual index pointer)
+        //---------------------------------------------------------------------------------------------
+        //quick partition
+        if (nums.size() < 2)    return;
+        quickSelect(nums, 0, nums.size() - 1, nums.size() / 2);
+        //this is not strictly the medium (not for even number length array)
+        int medium = nums[nums.size() / 2];
+        int small = 0, large = nums.size() - 1, pos = 0;
+        for (int i = 0; i < nums.size(); ++i) {
+            //traverse the whole array by the virtual index order
+            if (nums[virtual_index(pos, nums.size())] < medium) 
+                swap(nums, virtual_index(pos++, nums.size()), virtual_index(small++, nums.size()));
+            else if (nums[virtual_index(pos, nums.size())] > medium) 
+                swap(nums, virtual_index(large--, nums.size()), virtual_index(pos, nums.size()));
+            else ++pos;
+        }
+
+    }
+
+    void quickSelect(vector<int> &nums, int start, int end, int pos) {
+        //this function implement the quickSelect algorithm, it has amortized O(n) time
+        //to get guaranteed O(n) time, we need to do a "median of medians" partition, which takes much more effort to implement
+        //get a random pivot
+        if (start >= end)   return;
+        int pivot = rand() % (end - start + 1) + start;
+        int pivot_val = nums[pivot];
+        swap(nums, pivot, start);
+        int small = start, large = end, i = start + 1;
+        while (small < large) {
+            if (nums[i] <= pivot_val)   nums[small++] = nums[i++];
+            else    swap(nums, i, large--);
+        }
+        nums[small] = pivot_val;
+        if (small == pos)   return;
+        if (small < pos)    quickSelect(nums, small + 1, end, pos);
+        else    quickSelect(nums, start, small - 1, pos);
+        //use this we can easy solution to the 215 Kth Largest Element in an Array which beats 85.17%
+    }
+    
 
 }; 
 
@@ -681,11 +805,12 @@ int main() {
     vector<vector<int>> rect({{1, 1, 3, 3}, {3, 1, 4, 2}, {3, 2, 4, 4}, {1, 3, 2, 4}, {2, 3, 3, 4}});
     vector<vector<int>> rect2({{1, 1, 2, 3}, {1, 3, 2, 4}, {3, 1, 4, 2}, {3, 2, 4, 4}});
     vector<vector<int>> rect3({{0, 0, 1, 1}, {0, 1, 3, 2}, {1, 0, 2, 2}});
+    vector<int> test{1, 2, 2, 1, 2, 1, 1, 1, 2, 2, 1, 2, 1, 2, 1, 1};
+    vector<int> qc({5, 4, 8, 7, 2, 3});
     Solution s;
-    vector<int> nums({1, 2, 3, 4, 5});
-    for (int seq: s.lengthOfLIS(nums)) {
-        cout << seq << " ";
+    s.wiggleSort_perfect(test);
+    for (int num: test) {
+        cout << num << endl;
     }
-    cout << endl;
 }
 

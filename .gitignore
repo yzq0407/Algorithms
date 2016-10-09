@@ -1,2 +1,6 @@
 #java class files
 *.class
+
+
+#cpp files
+*.o
