@@ -1,6 +1,64 @@
 import java.util.*;
 
 public class Solution_start {
+
+    public int strobogrammaticInRange(String low, String high) {
+        if (low.length() > high.length() || low.length() == high.length() && low.compareTo(high) > 0)
+            return 0;
+        char[][] pairs = new char[][] {{'0', '0'}, {'1', '1'}, {'6', '9'}, {'8', '8'}, {'9', '6'}};
+        int count = 0;
+        for (int i = low.length() + 1; i <= high.length(); ++i) {
+             count += countStrGrammatic(i);
+        }
+        count += strbogrammaticGreater(low, pairs, 0, low.length() - 1, true);
+        count -= strbogrammaticGreater(high, pairs, 0,  high.length() - 1, false);
+        return count;
+    }
+
+    public int strbogrammaticGreater(String number, char[][] pairs, int start, int high, boolean inclusive) {
+        if (start > high)    return inclusive? 1: 0;
+        int count = 0;
+        if (start == high) {
+            for (int i = 0; i < pairs.length; ++i) {
+                if (pairs[i][0] =='6' || pairs[i][0] == '9')  continue;
+                if (pairs[i][0] > number.charAt(start) || (pairs[i][0] == number.charAt(start) && inclusive))
+                    ++count;
+            }
+            System.out.println("for start: " + start + " and " + high + " : " + count);
+            return count;
+        }
+        int smallerCount = 0, equalCount = 0;
+        for (char[] pair: pairs ) {
+            if (pair[0] > number.charAt(start)){
+                smallerCount += ((high - start + 1) % 2 == 1? 3: 1) * (int)Math.pow(5, (high - start + 1) / 2 - 1);
+            }
+            else if (pair[0] == number.charAt(start)) {
+                if (pair[1] == number.charAt(high)) {
+                    smallerCount += strbogrammaticGreater(number, pairs, start + 1, high - 1, inclusive);
+                }
+                if (pair[1] > number.charAt(high)) {
+                    smallerCount += strbogrammaticGreater(number, pairs, start + 1, high - 1, true);
+                }
+                if (pair[1] < number.charAt(high)) {
+                    smallerCount += strbogrammaticGreater(number, pairs, start + 1, high - 1, false);
+                }
+            }
+        }
+        System.out.println("for start: " + start + " and " + high + " : " + smallerCount);
+        return smallerCount;
+    }
+
+    public int countStrGrammatic(int i) {
+        if (i == 0) return 0;
+        if (i % 2 == 0) {
+            return 4 * (int) (Math.pow(5, i / 2 - 1));
+        }
+        else {
+            return 3 * (int) Math.pow(5, i / 2 - 1) * (i == 1? 1: 4);
+        }
+    }
+
+
 	public double findMedianSortedArrays(int[] nums1, int[] nums2) {
         int len = nums1.length + nums2.length;
         if (len % 2 == 0)
@@ -543,7 +601,7 @@ public class Solution_start {
         if (max == min) return 0;
         //
         long gap = (max - min) % (nums.length - 1) == 0? (max - min) / (nums.length - 1): (max - min) / (nums.length - 1) + 1;
-        int[][] buckets = new int[2][(int)(((long)max - (long)min) / gap) + 1];
+        int[][] buckets = new int[2][(int)((max - min) / gap) + 1];
         Arrays.fill(buckets[0], Integer.MIN_VALUE);
         Arrays.fill(buckets[1], Integer.MAX_VALUE);
         for (int num: nums) {
@@ -603,7 +661,7 @@ public class Solution_start {
         //     System.out.println(Arrays.toString(building));
         // }
         String[] dict = new String[] {"wrt", "wrf", "er", "ett", "rftt"};
-        System.out.println(s.candy(new int[]{58,21,72,77,48,9,38,71,68,77,82,47,25,94,89,54,26,54,54,99,64,71,76,63,81,82,60,64,29,51,87,87,72,12,16,20,21,54,43,41,83,77,41,61,72,82,15,50,36,69,49,53,92,77,16,73,12,28,37,41,79,25,80,3,37,48,23,10,55,19,51,38,96,92,99,68,75,14,18,63,35,19,68,28,49,36,53,61,64,91,2,43,68,34,46,57,82,22,67,89}));
+        System.out.println(s.strobogrammaticInRange("11", "69"));
         //System.out.println(s.getSkyline(buildings));
     }
 }

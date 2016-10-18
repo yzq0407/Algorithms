@@ -5,8 +5,11 @@
 #include <climits>
 #include <set>
 #include <queue>
+#include <stack>
 #include <unordered_set>
+#include <ostream>
 #include "accessories.h"
+#include "utils.h"
 
 
 
@@ -615,6 +618,253 @@ public:
         //use this we can easy solution to the 215 Kth Largest Element in an Array which beats 85.17%
     }
     
+    /* 45. Jump Game II */
+    /* Given an array of non-negative integers, you are initially positioned at the first index of the array. */
+
+    /* Each element in the array represents your maximum jump length at that position. */
+
+    /* Your goal is to reach the last index in the minimum number of jumps. */
+    int jump(vector<int> &nums) {
+        //greedy approach, record the current farthest and next farthest
+        //if it goes beyond the current farthest, trigger a jump to next farthest
+        int step = 0, limit = 0, next = 0;
+        for (int i = 0; i < nums.size(); ++i) {
+            next = max(i + nums[i], next);
+            if (i == limit) {
+                limit = next;
+                ++step;
+            }
+            if (limit >= nums.size())   break;
+        }
+        return step;
+        //-------run time 16ms------beats 26.64%------------
+    }
+
+    /* 33. Search in Rotated Sorted Array */
+    /* Suppose a sorted array is rotated at some pivot unknown to you beforehand. */
+
+    /* (i.e., 0 1 2 4 5 6 7 might become 4 5 6 7 0 1 2). */
+
+    /* You are given a target value to search. If found in the array return its index, otherwise return -1. */
+
+    /* You may assume no duplicate exists in the array. */
+    int search(vector<int>& nums, int target) {
+        //when we choose a mid, we have to determine whether it is in the left half 
+        //of rotated array or right half of the rotated array
+        //We should have four different scenario based on this approach
+        int low = 0;
+        int high = nums.size() - 1;
+        while (low < high) {
+            int mid = (low + high) >> 1;
+            if (nums[mid] >= nums[low]) {
+                if (target >= nums[low] && target <= nums[mid]) {
+                    high = mid;
+                }
+                else {
+                    low = mid + 1;
+                }
+            }
+            else {
+                if (target > nums[mid] && target <= nums[high]) {
+                    low = mid + 1;
+                }
+                else high = mid;
+            }
+        }
+        return nums[low] == target? low: -1;
+        //------run time 9ms------beats 1.32%
+    }
+
+    /* 10. Regular Expression Matching */
+    /* Implement regular expression matching with support for '.' and '*'. */
+    bool isMatch(string s, string p) {
+        //use dynamic programming to solve this problem, let dp[i][j] be 
+        //whether s[0:i] and p[0:j] matched or not, so we should have the following property:
+        //dp[i][j] = dp[i - 1][j - 1] && (s[i - 1] == p[j - 1] || p[j - 1] == '.') (last character matched)
+        //or dp[i][j] = (dp[i - 1][j] &&(s[i - 1] == p[j - 2] ||p[j - 2] =='.') || dp[i][j - 2] if (p[j - 1] == '*')
+        bool dp[s.size() + 1][p.size() + 1];
+        // zero strings always matched
+        dp[0][0] = true;
+        for (int i = 1; i <= s.size(); ++i) dp[i][0] = false;
+        for (int j = 1; j <= p.size(); ++j) {
+            dp[0][j] = p[j - 1] == '*'? dp[0][j - 2]: false;
+        }
+        for (int i = 1; i <= s.size(); ++i) {
+            for (int j = 1; j <= p.size(); ++j) {
+                dp[i][j] = false;
+                if (s[i - 1] == p[j - 1] || p[j - 1] == '.')    dp[i][j] = dp[i - 1][j - 1];
+                if (p[j - 1] == '*')    dp[i][j] = dp[i][j] || dp[i][j - 2] 
+                    || (dp[i - 1][j] && (s[i - 1] == p[j - 2] || p[j - 2] == '.'));
+                //cout << i << " " << j << " " << dp[i][j];
+            }
+        }
+        return dp[s.size()][p.size()];
+    }
+
+    /* 407. Trapping Rain Water II */
+    /* Given an m x n matrix of positive integers representing the height of */
+    /* each unit cell in a 2D elevation map, compute the volume of water it is able */
+    /* to trap after raining. */
+    int trapRainWater(vector<vector<int>>& heightMap) {
+        //we want to start from all the boundaries to seach into inside, since for each node
+        //the water it can keep is actually:
+        //1. find the shortest path to the boundary
+        //2. Use the highest point in the shortest path to compare with that node
+        //3. If it is larger than the node, we know the water reservation is gonna be 0
+        //We donnot need to calculate shortest path for every node. we can do the other way
+        //around, just push triplet(x, y, height) into pq, everytime pop a triplet with lowest height
+        //out of pq, search all its neighbors, if any of the neighbor has height < triplet.height,
+        //add the difference into the pq. Finally add all the neighbor into pq
+        if (heightMap.size() == 0)  return 0;
+        using triplet = pair<int, pair<int, int>>;
+        //this is a min pq, reverse it using lambda
+        auto compare = [] (const triplet& t1, const triplet& t2) {return t1.first > t2.first;};
+        priority_queue<triplet, vector<triplet>, decltype(compare)> pq(compare);
+        int sum = 0, n = heightMap.size(), m = heightMap[0].size();
+        for (int i = 0; i < n; ++i) {
+            pq.push(make_pair(heightMap[i][0], make_pair(i, 0)));
+            pq.push(make_pair(heightMap[i][m - 1], make_pair(i, m - 1)));
+            heightMap[i][0] = heightMap[i][m - 1] = -1;
+        }
+        for (int j = 1; j < m - 1; ++j) {
+            pq.push(make_pair(heightMap[0][j], make_pair(0, j)));
+            pq.push(make_pair(heightMap[n - 1][j], make_pair(n - 1, j)));
+            heightMap[0][j] = heightMap[n - 1][j] = -1;
+        }
+        const int dx[] = {-1, 1, 0, 0};
+        const int dy[] = {0, 0, -1, 1};
+        while (!pq.empty()) {
+            auto trip = pq.top();
+            pq.pop();
+            int x = trip.second.first, y = trip.second.second;
+            for (int d = 0; d < 4; ++d) {
+                int nx = dx[d] + x;
+                int ny = dy[d] + y;
+                if (nx >= 0 && nx < n && ny >= 0 && ny < m && heightMap[nx][ny] != -1) {
+                    pq.push(make_pair(max(heightMap[nx][ny], trip.first), make_pair(nx, ny)));
+                    if (heightMap[nx][ny] < trip.first) sum += trip.first - heightMap[nx][ny];
+                    heightMap[nx][ny] = -1;
+                }
+            }
+        }
+        return sum;
+    }
+
+    /* 47 Permutations II */
+    /* Given a collection of numbers that might contain duplicates, return all possible unique permutations. */
+    vector<vector<int>> permuteUnique(vector<int>& nums) {
+        //since there are duplicates, every time we do swap, we have to make sure there is no same number 
+        //before itself
+        vector<vector<int>> res;
+        dfs(res, nums, 0);
+        return res;
+        //----run time 23ms, beats 92.92%----- 
+    }
+
+    void dfs(vector<vector<int>> &res, vector<int>& nums, int idx) {
+        if (idx == nums.size()) {
+            res.push_back(nums);
+            return;
+        }
+        for (int i = idx; i < nums.size(); ++i) {
+            if (containsDuplicateBefore(nums, idx, i))   continue;
+            swap(nums, idx, i);
+            dfs(res, nums, idx + 1);
+            swap(nums, idx, i);
+        }
+    }
+
+    bool containsDuplicateBefore(vector<int>& nums, int from, int idx) {
+        for (int i = from; i < idx; ++i) {
+            if (nums[idx] == nums[i])   return true;
+        }
+        return false;
+    }
+
+    /* 37 Sudoku Solver */
+    /* Write a program to solve a Sudoku puzzle by filling the empty cells. */
+    bool solveSudoku(vector<vector<char>> &board) {
+        //Each time we try to fill an empty cell, need to check if there is an cell
+        //in the same row, column and block that has the same value. 
+        //To elimnate checking 24 cells each time, instead we keep a bitmask for each cell
+        //, row and block we represent which number is being occupied in this cell/row/block
+        //if number n is occupied, then we set the (n - 1) digit in the bitmask to be 1
+        //Thus, we need 9 row_mask, 9 col_mask and 9 block_mask, each time we are filling a
+        //cell, just do a bit & on all the inverse of the corresponding mask and we can get
+        //all the "available possitions", using low_bit function to retrieve all the numbers
+        //that we can fit(log2 function is implemented iteratively, don't use that)
+        //-----------------Preprocess------------------------------
+        vector<int> row_mask(9, 0), col_mask(9, 0), block_mask(9, 0);
+        unordered_map<int, char> pos_to_char;
+        for (int i = 0; i < 9; ++i) pos_to_char[1 << i] = (char) ('1' + i);
+        for (int i = 0; i < 9; ++i) {
+            for (int j = 0; j < 9; ++j) {
+                if (board[i][j] != '.') {
+                    //flip all the corresponding mask upon the filled value
+                    row_mask[i] |= (1 << (board[i][j] - '1'));
+                    col_mask[j] |= (1 << (board[i][j] - '1'));
+                    block_mask[getBlockIndex(i, j)] |= (1 << (board[i][j] - '1'));
+                }
+            }
+        }
+        //------------Search from the beginning of the board---------
+        return dfs(board, 0, 0, row_mask, col_mask, block_mask, pos_to_char);
+        //------------Run time 6ms----beats 76.24%------------------
+    }
+
+    //implement the search algorithm to find the right element to fill the board
+    bool dfs(vector<vector<char>> &board, int i, int j, vector<int> &rows, 
+            vector<int> &cols, vector<int> &blocks, unordered_map<int, char> &pos_to_char) {
+        //checked all the rows already, return true
+        if (i == 9) return true;
+        //checked this row already, go to next row
+        if (j == 9) return dfs(board, i + 1, 0, rows, cols, blocks, pos_to_char);
+        //not an empty cell, go to next cell on the right
+        if (board[i][j] != '.') 
+            return dfs(board, i, j + 1, rows, cols, blocks, pos_to_char);
+        int block_idx = getBlockIndex(i, j);
+        //get all the available positions that we can fill the empty cell 
+        //ex.   row[i] = 001000101   (at row i, there are already numbers 1, 3, and 7)
+        //      col[j] = 100100000   (at col j, there are already numbers 6 and 9)
+        //      blocks[block_idx] = 000010001  (at that blcok, there are number 1 and 5)
+        //      when do | operation, we have 101110101, basically sum up all the occupied positions
+        //      flip it we have 010001010, and also a 1 in the 32 bit
+        //      truncate it by doing & with (1 << 9) - 1, we got the bit mask representing
+        //      the available possitions that we can fill (this case it is 2, 4 and 8)
+        int available_pos = ((1 << 9) - 1) & ~(rows[i] | cols[j] | blocks[block_idx]);
+        while (available_pos != 0) {
+            //low bit function, get the lowest 1 in the bit mask
+            int low_bit = available_pos & -available_pos;
+            //remove that from the bit mask
+            available_pos ^= low_bit;
+            //don't do a log2! that is implemented iteratively, using preprocess map
+            board[i][j] = pos_to_char[low_bit];
+            //update all the bit mask and of course the board
+            rows[i] |= low_bit;
+            cols[j] |= low_bit;
+            blocks[block_idx] |= low_bit;
+            if (dfs(board, i, j + 1, rows, cols, blocks, pos_to_char))
+                return true;
+            //reset bit mask and board
+            rows[i] ^= low_bit;
+            cols[j] ^= low_bit;
+            blocks[block_idx] ^= low_bit;
+            board[i][j] = '.';
+        }
+        //cannot find a number to fill in the possition, return false then
+        return false;
+    }
+
+    //helper function to calculate the number of block one cell fit in
+    //----- ----- -----
+    //  0  |  1  |  2
+    //----- ----- -----
+    //  3  |  4  |  5
+    //----- ----- -----
+    //  6  |  7  |  8
+    int getBlockIndex(int i, int j) {
+        return i / 3 * 3 + j / 3;
+    }
 
 }; 
 
@@ -800,17 +1050,72 @@ class NumMatrix_Quad {
     //------------run time: 798ms, beat 2.98% ----------
 };
 
+/* 381. Insert Delete GetRandom O(1) - Duplicates allowed */
+/* Design a data structure that supports all following operations in average O(1) time. */
+
+/* Note: Duplicate elements are allowed. */
+/* insert(val): Inserts an item val to the collection. */
+/*              remove(val): Removes an item val from the collection if present. */
+/*              getRandom: Returns a random element from current collection of elements. */ 
+/*                         The probability of each element being returned is linearly related */
+/*                         to the number of same value the collection contains. */
+class RandomizedCollection {
+    //Keep a vector to hold all the elements that we current have (this will allow O(1) getRandom operation)
+    //Keep a hashmap to hold use element value as key, a set containing all the indexes in the vector as value
+    //when we remove a value, we get its index, swap with the last index in the array(update hashmap of course)
+    //and then pop_back the vector
+    //
+    private:
+        unordered_map<int, unordered_set<int>> val_to_index;
+        vector<int> vals;
+
+    public:
+        RandomizedCollection() {
+        }
+
+        bool insert (int val) {
+            vals.push_back(val);
+            val_to_index[val].insert(vals.size() - 1);
+            return val_to_index[val].size() == 1;
+        }
+
+        bool remove (int val) {
+            if (val_to_index.find(val) == val_to_index.end())   return false;
+            //if the val turns out to be the very last, it becomes easy
+            if (vals.back() == val) {
+                val_to_index[val].erase(vals.size() - 1);
+                if (!val_to_index[val].size())  val_to_index.erase(val);
+                vals.pop_back();
+            }
+            else {
+                //now we need to get two set and swap the index
+                auto &last_element_set = val_to_index[vals.back()];
+                auto &remove_element_set = val_to_index[val];
+                int remove_index = *remove_element_set.begin();
+                int last_index = vals.size() - 1;
+                last_element_set.insert(remove_index);
+                last_element_set.erase(last_index);
+                remove_element_set.erase(remove_index);
+                if (!remove_element_set.size()) val_to_index.erase(val);
+                vals[remove_index] = vals.back();
+                vals.pop_back();
+            }
+            return true;
+        }
+
+        int getRandom() {
+            int idx = rand() % vals.size();
+            return vals[idx];
+        }
+        //------run time 129ms ---- beats 26.93%---------//
+};
 
 int main() {
-    vector<vector<int>> rect({{1, 1, 3, 3}, {3, 1, 4, 2}, {3, 2, 4, 4}, {1, 3, 2, 4}, {2, 3, 3, 4}});
-    vector<vector<int>> rect2({{1, 1, 2, 3}, {1, 3, 2, 4}, {3, 1, 4, 2}, {3, 2, 4, 4}});
-    vector<vector<int>> rect3({{0, 0, 1, 1}, {0, 1, 3, 2}, {1, 0, 2, 2}});
-    vector<int> test{1, 2, 2, 1, 2, 1, 1, 1, 2, 2, 1, 2, 1, 2, 1, 1};
-    vector<int> qc({5, 4, 8, 7, 2, 3});
+    vector<vector<int>> rect({{1, 4, 3, 1, 3, 2}, {3, 2, 1, 3, 2, 4}, {2, 3, 3, 2, 3, 1}});
+    vector<int> test({ 1, 2, 3, 4, 5});
     Solution s;
-    s.wiggleSort_perfect(test);
-    for (int num: test) {
-        cout << num << endl;
+    for (auto vec: s.permuteUnique(test)) {
+        cout << vec << endl;
     }
 }
 

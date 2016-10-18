@@ -1,3 +1,5 @@
+#ifndef ALGO_ACCESSORIES
+#define ALGO_ACCESSORIES
 //a general binary treenode that has left child and right child
 struct TreeNode {
     int val;
@@ -30,4 +32,4 @@ struct IndexedTreeNode {
     IndexedTreeNode* right;
     IndexedTreeNode(int v);
 };
-
+#endif
