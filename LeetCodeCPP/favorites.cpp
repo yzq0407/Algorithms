@@ -444,7 +444,7 @@ public:
                 intervals.erase(intervals[num + 1]);
                 intervals.erase(num + 1);
             }
-            maxSequence = max(end - head + 1, maxSequence);
+            maxSequence = max(end - head + 2, maxSequence);
             intervals.insert({head, end});
             intervals.insert({end, head});
         }
@@ -866,6 +866,62 @@ public:
         return i / 3 * 3 + j / 3;
     }
 
+
+    /* 272. Closest Binary Search Tree Value II */
+    /* Note: */
+    /* Given target value is a floating point. */
+    /* You may assume k is always valid, that is: k ≤ total nodes. */
+    /* You are guaranteed to have only one unique set of k values in the BST that are closest to the target. */
+    vector<int> closestKValues(TreeNode* root, double target, int k) {
+        //as the hint suggested, we want to have two functions, get predecessor and get successor
+        //they can be implemented in two ways: stack and recursion, here I choose to use stack to reduce the function call overhead
+        //first find the lower, which is the TreeNode with value less than target
+        stack<TreeNode *> less, greaterOrEqual;
+        vector<int> res;
+        auto p = root;
+        while (p) {
+            if (p -> val < target) {
+                less.push(p);
+                p = p -> right;
+            }
+            else {
+                p = p -> left;
+            }
+        }
+        p = root;
+        while (p) {
+            if (p -> val >= target) {
+                greaterOrEqual.push(p);
+                p = p -> left;
+            }
+            else {
+                p = p -> right;
+            }
+        }
+        while ((!less.empty() || !greaterOrEqual.empty()) && res.size() < k) {
+            if (greaterOrEqual.empty() || (!less.empty() &&
+                (target - less.top() -> val <= (double)greaterOrEqual.top() -> val - target))) {
+                auto p = less.top();
+                less.pop();
+                res.push_back(p -> val);
+                for (p = p -> left; p; p = p -> right) {
+                    less.push(p);
+                }
+            }
+            else {
+                auto p = greaterOrEqual.top();
+                greaterOrEqual.pop();
+                res.push_back(p -> val);
+                for (p = p -> right; p; p = p -> left) {
+                    greaterOrEqual.push(p);
+                }
+            }
+        }
+        return res;
+        //-----------------run time 16ms beats 65.78%----------------
+    }
+
+
 }; 
 
 /*     308 Range Sum Query 3D - Mutable */
@@ -1114,8 +1170,7 @@ int main() {
     vector<vector<int>> rect({{1, 4, 3, 1, 3, 2}, {3, 2, 1, 3, 2, 4}, {2, 3, 3, 2, 3, 1}});
     vector<int> test({ 1, 2, 3, 4, 5});
     Solution s;
-    for (auto vec: s.permuteUnique(test)) {
-        cout << vec << endl;
-    }
+    TreeNode* root = new TreeNode(1);
+    cout << s.closestKValues(root, 0.0000, 1)[0] << endl;
 }
 
