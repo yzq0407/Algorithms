@@ -1,6 +1,6 @@
 #java class files
 *.class
-
+.DS_Store
 
 #cpp files
 *.o

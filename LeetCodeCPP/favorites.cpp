@@ -377,29 +377,22 @@ public:
         return res;
         //----------run time 138ms beats 40.73%---------
     }
-    
-    //helper functions and struct
-    struct TrieNode {
-        vector<TrieNode*> children;
-        string word;
-        TrieNode(): children(26, nullptr) {}
-    };
 
-    TrieNode* put(TrieNode* root, const string& word, int pos) {
+    TrieNode *put(TrieNode *root, const string& word, int pos) {
         if (!root)  root = new TrieNode();
-        if (pos == word.size()) root -> word = word;
+        if (pos == word.size()) root -> val = word;
         else {
             root -> children[word[pos] - 'a'] = put(root -> children[word[pos] - 'a'], word, pos + 1);
         }
         return root;
     }
-
+    
     void dfs(vector<string> &res, TrieNode *node, vector<vector<char>> &board, 
             int x, int y, const vector<int>& dx, const vector<int>& dy) {
         if (!node)  return;
-        if (node -> word.size()) {
-            res.push_back(node -> word);
-            node -> word = "";
+        if (node -> val.size()) {
+            res.push_back(node -> val);
+            node -> val = "";
         }
         char temp = board[x][y];
         board[x][y] = '#';
@@ -921,6 +914,79 @@ public:
         //-----------------run time 16ms beats 65.78%----------------
     }
 
+/*     425. Word Squares */
+/*     Given a set of words (without duplicates), find all word squares you can build from them. */
+/*     A sequence of words forms a valid word square if the kth row and column read the exact same string, */
+/*     where 0 ≤ k < max(numRows, numColumns). */
+    vector<vector<string>> wordSquares(vector<string>& words) {
+        //suppose we already have n - 1 rows ready  and now looking for the n th row, what do we know about the n the row? 
+        //the key observation is that the n the row must have a prefix that match the characters in the n th column start
+        //from 0th row to n - 1 row
+        //appended_string[0: n] = squares_sofar[0: n, n]
+        //since it is a prefix search problem, we want to use trie tree to facillitate the searching process, first by injecting
+        //all the strings into the root trienode and then use dfs and backtrack to find the right string with correct prefix
+        auto root = new TrieNode_Map();
+        vector<vector<string>> res;
+        vector<string> list;
+        if (words.size() == 0 || words[0].size() == 0)  return res;
+        //get the dimension of the word
+        const int dim = words[0].size();
+        for (const string& word: words) {
+            root = put(root, word, 0);
+        }
+        dfs(res, list, root, dim);
+        //
+        delete(root);
+        return res;
+    }
+
+    //recursively put string into trienode
+    TrieNode_Map* put(TrieNode_Map* root, const string& word, size_t pos) {
+        if (!root)  root = new TrieNode_Map();
+        if (pos == word.size()) {
+            root -> val = word;
+        }
+        else {
+            root -> children[word[pos]] = put(root -> children.find(word[pos]) == root -> children.end()? nullptr: root -> children[word[pos]], word, 
+                    pos + 1);
+        }
+        return root;
+    }
+
+    void dfs(vector<vector<string>> &res, vector<string> &list, TrieNode_Map* root, const int dim) {
+        size_t size = list.size();
+        if (size == dim) {
+            res.push_back(list);
+            return;
+        }
+        auto p = root;
+        //get prefix from list[0] to list.back
+        for (auto it = list.begin(), last = list.end(); it != last; ++it) {
+            if (p -> children.find((*it)[size]) == p ->children.end()) return;
+            p = p -> children[(*it)[size]];
+        }
+        //now we know p is the starting root of the next word, search all it's children
+        //here we use a bfs search to enable fast backtrack
+        deque<TrieNode_Map*> q;
+        q.push_back(p);
+        while (!q.empty()) {
+            auto front_node = q.front();
+            q.pop_front();
+            //we copy the map, in order to traverse it
+            for (auto pair: front_node -> children) {
+                if (pair.second -> val != "") {
+                    list.push_back(pair.second -> val);
+                    dfs(res, list, root, dim);
+                    //backtrack
+                    list.pop_back();
+                }
+                //otherwise push into the queue, continue bfs
+                else {
+                    q.push_back(pair.second);
+                }
+            }
+        }
+    }
 
 }; 
 
@@ -1166,11 +1232,92 @@ class RandomizedCollection {
         //------run time 129ms ---- beats 26.93%---------//
 };
 
+/* 211. Add and Search Word - Data structure design */
+/* Design a data structure that supports the following two operations: */
+class WordDictionary {
+    //using a trie is obvious, but should we use a trie implemented using vector of children
+    //or unordered_map of children
+    //Here I choose to use map version since it will be less useless operation when we
+    //search by '.'
+    private:
+        TrieNode_Map* root;
+
+        //recursively add
+        TrieNode_Map *put(TrieNode_Map *node, const string& word, int pos) {
+            if (!node)  node = new TrieNode_Map();
+            if (pos != word.size()) {
+                node -> children[word[pos]] = put(node -> children.find(word[pos]) == 
+                    node -> children.end()? nullptr: node -> children[word[pos]],
+                    word, pos + 1);
+            }
+            else {
+                //add terminater
+                node -> val = "#";
+            }
+            return node;
+        }       
+
+        //recursively search
+        bool search(TrieNode_Map *node, const string& word, int pos) {
+            if (pos == word.size()) return node -> val == "#";
+            if (word[pos] != '.') {
+                return node -> children.find(word[pos]) == node -> children.end()?
+                    false: search(node ->children[word[pos]], word, pos + 1);
+            }
+            else {
+                //go through all the children and check if there is a match
+                for (auto pair: node -> children) {
+                    if (search(pair.second, word, pos + 1)) return true;
+                }
+            }
+            return false;
+        }
+
+    public:
+        //ctor
+        WordDictionary():root(new TrieNode_Map){}
+
+        //this dictionary has reference semantic, do not allow copy
+        WordDictionary(const WordDictionary& other) = delete;
+        WordDictionary operator=(const WordDictionary& other) = delete;
+
+        //dtor
+        ~WordDictionary(){
+            delete(root);
+        }
+
+        //Adds a word into the data structure
+        void addWord(string word) {
+            put (root, word, 0);
+        }
+
+        // Returns if the word is in the data structure. A word could
+        // contain the dot character '.' to represent any one letter.
+        bool search(const string& word) {
+            return search(root, word, 0);
+        }
+};
+
 int main() {
-    vector<vector<int>> rect({{1, 4, 3, 1, 3, 2}, {3, 2, 1, 3, 2, 4}, {2, 3, 3, 2, 3, 1}});
-    vector<int> test({ 1, 2, 3, 4, 5});
+    vector<string> dict({"ball", "area", "wall", "lead", "lady"});
+    vector<string> dict2({"abat","baba","atan","atal"});
+
     Solution s;
-    TreeNode* root = new TreeNode(1);
-    cout << s.closestKValues(root, 0.0000, 1)[0] << endl;
+    for (auto v: s.wordSquares(dict)) {
+        for (auto s: v) {
+            cout << s << " " << endl;
+        }
+        cout << endl;
+    }
+    cout << "-----------------------------" << endl;
+
+    WordDictionary wd;
+    wd.addWord("bad");
+    wd.addWord("dad");
+    wd.addWord("mad");
+    cout << wd.search ("pad") <<endl;
+    cout << wd.search ("bad") <<endl;
+    cout << wd.search ("..d") <<endl;
+    cout << wd.search ("b.") <<endl;
 }
 
