@@ -98,15 +98,31 @@ class Solution {
             }
             return i - j;
         }
+
+        /* 439. Ternary Expression Parser */
+        /* Given a string representing arbitrarily nested ternary expressions, calculate the result of the expression. */
+        /* You can always assume that the given expression is valid and only consists of digits 0-9, ?, :, T and F (T and F represent True and False respectively). */
+        /* string parseTernary(string expression) { */
+        /*     int pos = 0; */
+        /*     return parseTernary(expression, pos); */
+        /* } */
+
+        /* char parseTernary(const string& expression, int& pos) { */
+        /*     if (expression[pos] != 'T' && expression [pos] != 'F') { */
+        /*         return expression[pos++]; */
+        /*     } */
+        /*     bool eval = expression[pos++] == 'T'; */
+        /*     string left = parseTernary(expression, ++pos); */
+        /*     string right = parseTernary(expression, ++pos); */
+        /*     return eval?left: right; */
+        /* } */
+
+
+
 };
 
 
 int main() {
     Solution s;
-    time_t t = time(0);
-    clock_t start = clock();
-    cout << s.getNumberOfFills(5) << endl;
-    clock_t timeElapsed = (clock() - start) / CLOCKS_PER_SEC;
-    time_t t2 = time(0);
-    cout << "time elapsed: " << timeElapsed << endl;
+    cout << s.parseTernary("F?2:3") << endl;
 }

@@ -14,7 +14,7 @@
 
 
 using namespace std;
-//contains all the solution functions for the favoriates questions
+//contains all the solution functions for the favoriate questions
 class Solution {
 public:
     /* 354. Russain Doll Envelopes */
@@ -112,8 +112,6 @@ public:
             root = put(root, nums[i], smaller);
             res[i] = smaller;
         }
-        //no memory leak!
-        cleanup(root);
         return res;
     }
 
@@ -134,14 +132,6 @@ public:
         }
         return root;
     }
-
-    void cleanup (IndexedTreeNode *root) {
-        if (!root)  return;
-        cleanup(root -> left);
-        cleanup(root -> right);
-        delete(root);
-    }
-
     //----running time 33ms, beats 89.18%------//
 
 
@@ -938,6 +928,8 @@ public:
         //
         delete(root);
         return res;
+        //-----------------run time 385ms----beats 20.30%--------
+        //not optimized
     }
 
     //recursively put string into trienode
@@ -988,6 +980,123 @@ public:
         }
     }
 
+
+    /* 440. K-th Smallest in Lexicographical Order */
+    /* Given integers n and k, find the lexicographically k-th smallest integer in the range from 1 to n. */
+
+    /* Note: 1 ≤ k ≤ n ≤ 10^9. */
+    int findKthNumber(int n, int k) {
+        //thoughts: given a prefix number: prefix, what is the number of numbers <= n that having this prefix?
+        //start from prefix its self, it's going to be 1, and prefix * 10, there will be 10, prefix * 100, there will be 100
+        //if 
+        //after compute the total less number, added to the total count, if total count >= k, we know that the final result must be
+        //with the prefix, make the prefix = prefix * 10 and add total count by 1. 
+        //Repeat the process until we find a prefix with total count == k - 1
+        int prefix = 1;
+        int total_less = 0;
+        while (total_less != k - 1) {
+            int smallerWithPrefix = getSmallerWithPrefix(n, prefix);
+            if (total_less + smallerWithPrefix >= k) {
+                prefix *= 10;
+                total_less += 1;
+            }
+            else {
+                total_less += smallerWithPrefix;
+                ++prefix;
+            }
+        }
+        return prefix;
+        //--------no running time info at the moment-------------
+    }
+
+    //helper function to calculate number of smaller or equal numbers with given prefix
+    int getSmallerWithPrefix(long n, long prefix) {
+        int multiplier = 1;
+        int sum = 0;
+        while (prefix * multiplier < n) {
+            if (n - prefix * multiplier <= multiplier) {
+                sum += (n - prefix * multiplier + 1);
+                return sum;
+            }
+            else {
+                sum += multiplier;
+            }
+            multiplier *= 10;
+        }
+        return sum;
+    }
+
+    /* 254. Factor Combinations */
+    /* Numbers can be regarded as product of its factors. For example, */
+
+    /*         8 = 2 x 2 x 2; */
+    /*           = 2 x 4. */
+    /* Write a function that takes an integer n and return all possible combinations of its factors. */
+    vector<vector<int>> getFactors(int n) {
+        //we start from 2, each time we only consider a factor that greater than the last factor
+        //but less than equal to sqrt(rem)
+        vector<vector<int>> res;
+        vector<int> list;
+        for (int i = 2; i * i <= n; ++i) {
+            if (n % i == 0) {
+                list.push_back(i);
+                dfs(res, list, i, n / i);
+                list.pop_back();
+            }
+        }
+        return res;
+        //---------run time 3ms, beats 49.86%----------
+    }
+    
+    //dfs and backtrack
+    void dfs(vector<vector<int>> &res, vector<int> &list, int last, int rem) {
+        list.push_back(rem);
+        res.push_back(list);
+        list.pop_back();
+        for (int next = last; next * next <= rem; ++next) {
+            if (rem % next == 0) {
+                list.push_back(next);
+                dfs(res, list, next, rem / next);
+                list.pop_back();
+            }
+        }
+    }
+
+    /* 239. Sliding Window Maximum */
+    /* Given an array nums, there is a sliding window of size k which is moving from the very left of the array */
+    /* to the very right. You can only see the k numbers in the window. Each time the sliding window moves right by one position. */
+
+    /* For example, */
+    /*     Given nums = [1,3,-1,-3,5,3,6,7], and k = 3. */
+    vector<int> maxSlidingWindow(vector<int> &nums, int k) {
+        //keeping a deque that keeping a monotomic decreasing sequence of the values in the window
+        //everytime we move the deque, pop out the values in the front that is less than or equal to the new value
+        //and remove the end value if it's index is out of the window scope, then the end value left should be the value
+        //to be added
+        vector<int> res;
+        //a deque keep the index of the values in num within the window
+        deque<int> window;
+        if (k == 0 || nums.size() == 0) return res;
+        //there is guaranteed to be nums.size() - k + 1 values
+        res.reserve(nums.size() - k + 1);
+        for (int i = 0; i < nums.size(); ++i) {
+            //keep monotomic property
+            while (!window.empty() && nums[window.front()] <= nums[i]) {
+                window.pop_front();
+            }
+            //add the new value
+            window.push_front(i);
+            while (!window.empty() && window.back() <= i - k) {
+                window.pop_back();
+            }
+            if (i >= k - 1) {
+                res.push_back(nums[window.back()]);
+            }
+        }
+        return res;
+        //-----------run time 89ms, beats 38.23%-------------
+    }
+    
 }; 
 
 /*     308 Range Sum Query 3D - Mutable */
@@ -1299,25 +1408,7 @@ class WordDictionary {
 };
 
 int main() {
-    vector<string> dict({"ball", "area", "wall", "lead", "lady"});
-    vector<string> dict2({"abat","baba","atan","atal"});
-
     Solution s;
-    for (auto v: s.wordSquares(dict)) {
-        for (auto s: v) {
-            cout << s << " " << endl;
-        }
-        cout << endl;
-    }
-    cout << "-----------------------------" << endl;
-
-    WordDictionary wd;
-    wd.addWord("bad");
-    wd.addWord("dad");
-    wd.addWord("mad");
-    cout << wd.search ("pad") <<endl;
-    cout << wd.search ("bad") <<endl;
-    cout << wd.search ("..d") <<endl;
-    cout << wd.search ("b.") <<endl;
+    cout << s.findKthNumber(13, 3) << endl;
 }
 
