@@ -1096,6 +1096,72 @@ public:
         return res;
         //-----------run time 89ms, beats 38.23%-------------
     }
+
+    /* 126. Word Ladder II */
+    /* Given two words (beginWord and endWord), and a dictionary's word list, */ 
+    /* find all shortest transformation sequence(s) from beginWord to endWord, such that: */
+
+    /* Only one letter can be changed at a time */    
+    /* Each intermediate word must exist in the word list */
+    vector<vector<string>> findLadders(const string& beginWord, const string& endWord, unordered_set<string> &wordList) {
+        //one of the hardest problem in LeetCode, build map by bfs, and then use dfs to find all the path
+        unordered_map<string, unordered_set<string>> word_map;
+        //create search queue
+        unordered_set<string> search_queue{beginWord};
+        wordList.erase(beginWord);
+        wordList.insert(endWord);
+        while (!search_queue.empty()) {
+            //this set is going to be the next layer discovered by current layer
+            unordered_set<string> neighbors;
+            for (auto it = search_queue.begin(), end = search_queue.end();
+                    it != end;
+                    ++it) {
+                string node(*it);
+                //we go by each character and search it's 25 possible neighbors
+                for (int pos = 0; pos < node.size(); ++pos) {
+                    char temp = node[pos];
+                    for (char c = 'a'; c <= 'z'; ++c) {
+                        if (c == temp)  continue;
+                        node[pos] = c;
+                        if (wordList.find(node) != wordList.end()) {
+
+                            //setup a path
+                            word_map[*it].insert(node);
+                            neighbors.insert(node);
+                        }
+                    }
+                    //donot forget to reset the char value
+                    node[pos] = temp;
+                }
+            }
+            //already find the final word, stop bfs right away
+            if (neighbors.find(endWord) != neighbors.end()) break;
+            for (auto word: neighbors) {
+                wordList.erase(word);
+            }
+            //wordList.erase(neighbors.begin(), neighbors.end());
+            search_queue = neighbors;
+        }
+        //now we already have the map, do dfs to find all the possible path
+        vector<vector<string>> res;
+        vector<string> path {beginWord};
+        dfs(beginWord, endWord, res, path, word_map);
+        return res;
+    }
+
+    //recursively search for the path
+    void dfs(const string& current, const string& endWord, vector<vector<string>> &res, 
+            vector<string> &path, unordered_map<string, unordered_set<string>> &word_map){
+        if (current == endWord) {
+            res.push_back(path);
+            return;
+        }
+        for (auto neighbor: word_map[current]) {
+            path.push_back(neighbor);
+            dfs(neighbor, endWord, res, path, word_map);
+            path.pop_back();
+        }
+    }
     
 }; 
 
@@ -1409,6 +1475,16 @@ class WordDictionary {
 
 int main() {
     Solution s;
-    cout << s.findKthNumber(13, 3) << endl;
+    string beginWord("hot");
+    string endWord("dog");
+    unordered_set<string> set{"hot", "dog", "dot"};
+    for(auto path: s.findLadders(beginWord, endWord, set)){
+
+        cout << "done!" <<endl;
+        for (auto word: path) {
+            cout <<word;
+        }
+        cout << endl;
+    }
 }
 
