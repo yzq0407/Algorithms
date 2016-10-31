@@ -98,31 +98,27 @@ class Solution {
             }
             return i - j;
         }
+        /* 441. Arranging Coins */
+    /* You have a total of n coins that you want to form in a staircase shape, where every k-th row must have exactly k coins. */
 
-        /* 439. Ternary Expression Parser */
-        /* Given a string representing arbitrarily nested ternary expressions, calculate the result of the expression. */
-        /* You can always assume that the given expression is valid and only consists of digits 0-9, ?, :, T and F (T and F represent True and False respectively). */
-        /* string parseTernary(string expression) { */
-        /*     int pos = 0; */
-        /*     return parseTernary(expression, pos); */
-        /* } */
+    /* Given n, find the total number of full staircase rows that can be formed. */
 
-        /* char parseTernary(const string& expression, int& pos) { */
-        /*     if (expression[pos] != 'T' && expression [pos] != 'F') { */
-        /*         return expression[pos++]; */
-        /*     } */
-        /*     bool eval = expression[pos++] == 'T'; */
-        /*     string left = parseTernary(expression, ++pos); */
-        /*     string right = parseTernary(expression, ++pos); */
-        /*     return eval?left: right; */
-        /* } */
-
-
-
+    /* n is a non-negative integer and fits within the range of a 32-bit signed integer. */
+        int arrangeCoins(int n) {
+            //n * (n + 1) / 2            n^2 / 2 + n / 2
+            int low = 1;
+            int high = n / 2 + 1;
+            while (low <= high) {
+                long long mid = static_cast<long long>(low + (high - low) / 2);
+                long long total = (mid * mid + mid) / 2;
+                if (total > n)  high = mid - 1;
+                else    low = mid + 1;
+            }
+            return low - 1;
+        }
 };
 
 
 int main() {
     Solution s;
-    cout << s.parseTernary("F?2:3") << endl;
 }
