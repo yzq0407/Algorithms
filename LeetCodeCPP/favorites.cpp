@@ -1179,7 +1179,7 @@ public:
         if (searchLadders(startWords, endWords, dict, children, flip))
             genLadders(start, end, children, ladder, ladders);
         return ladders;
-        //-------run time 96ms betas 79.12%-------------
+        /* /   -------run time 96ms betas 79.12%------------- */
     }
 
     bool searchLadders(unordered_set<string>& startWords, unordered_set<string>& endWords, 
@@ -1224,6 +1224,43 @@ public:
             genLadders(child, end, children, ladder, ladders);
             ladder.pop_back();
         }
+    }
+
+    /* 444. Sequence Reconstruction */
+    /* Check whether the original sequence org can be uniquely reconstructed from the sequences in seqs. */ 
+    /* The org sequence is a permutation of the integers from 1 to n, with 1 ≤ n ≤ 104. */ 
+    /* Reconstruction means building a shortest common supersequence of the sequences in seqs */ 
+    /* (i.e., a shortest sequence so that all sequences in seqs are subsequences of it). */ 
+    /* Determine whether there is only one sequence that can be reconstructed from seqs and it is the org sequence. */
+    bool sequenceReconstruction(vector<int> &org, vector<vector<int>> &seqs) {
+        //the first tuition of this problem is that it might require using of graph search but the right solution is not
+        //since we need to determine is there a "unique" sequence. The adjacent elements in the original sequence must be
+        //presented as adjacent subsequence and we need org.size() - 1 such "edges". So we can use edge counter to do the trick
+        //the map to keep the element -> position pair, a simple way would be using vector though
+        unordered_map<int, int> inversed_map;
+        //see if a edge has been visited by checking its head element
+        unordered_set<int> visited;
+        if (seqs.size() == 0 || org.size() == 0)    return false;
+        for (int idx = 0; idx < org.size(); ++idx) {
+            inversed_map[org[idx]] = idx;
+        }
+        //edge counter
+        int count_edge = 0;
+        for (auto seq: seqs) {
+            if (seq.size() != 0 && inversed_map.find(seq[0]) == inversed_map.end()) return false;
+            for (int idx = 1; idx < seq.size(); ++idx) {
+                //if any element is not showing up, or it forms a self-loop, or it is a inversed pair, return false
+                if (seq[idx - 1] == seq[idx] || inversed_map.find(seq[idx]) == inversed_map.end() ||
+                        inversed_map[seq[idx - 1]] > inversed_map[seq[idx]])  return false;
+                //check condition to increment counter
+                if (inversed_map[seq[idx - 1]] + 1 == inversed_map[seq[idx]] 
+                        && visited.find(inversed_map[seq[idx - 1]]) == visited.end()) {
+                    ++count_edge;
+                    visited.insert(inversed_map[seq[idx - 1]]);
+                }
+            }
+        }
+        return count_edge == org.size() - 1;
     }
     
 }; 
@@ -1538,16 +1575,10 @@ class WordDictionary {
 
 int main() {
     Solution s;
-    string beginWord("hot");
-    string endWord("dog");
-    unordered_set<string> set{"hot", "dog", "dot"};
-    for(auto path: s.findLadders(beginWord, endWord, set)){
-
-        cout << "done!" <<endl;
-        for (auto word: path) {
-            cout <<word;
-        }
-        cout << endl;
-    }
+    vector<int> org = {4, 1, 5, 2, 6, 3};
+    vector<vector<int>> seqs1 = {{1, 2}, {1, 3}};
+    vector<vector<int>> seqs2 = {{1, 2}, {1, 3}, {2, 3}};
+    vector<vector<int>> seqs3 = {{5, 2, 6, 3}, {4, 1, 5, 2}};
+    cout << s.sequenceReconstruction(org, seqs3) << endl;
 }
 
