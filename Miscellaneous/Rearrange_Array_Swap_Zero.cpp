@@ -13,7 +13,7 @@ class Solution {
     /* program that prints to stdout the list of required operations. */ 
     static vector<int> rearrangeSwapZero(vector<int> &src, const vector<int> target) {
         //idea, there must be several closed loop in the array, we can first make them into 
-        //one big loop, to do it, we use a boolean vector to record where we found
+        //one big loop, to do it, we use a boolean vector to record where we have found
         long long visited = 0;
         vector<int> res;
         vector<int> map(target.size());
@@ -23,7 +23,6 @@ class Solution {
         for (int pos = 0; pos < src.size(); ++pos) {
             if (visited & (1 << pos))   continue;
             visited |= (1 << pos);
-            cout << "swap with " << pos << endl;
             for (int pointer = map[src[pos]]; pointer != pos; pointer = map[src[pointer]]) {
                 visited |= (1 << pointer);
             }
