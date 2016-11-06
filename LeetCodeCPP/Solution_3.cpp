@@ -116,6 +116,58 @@ class Solution {
             }
             return low - 1;
         }
+
+/*         30. Substring with Concatenation of All Words */
+/*         You are given a string, s, and a list of words, words, that are all of the same length. */
+/*         Find all starting indices of substring(s) in s that is a concatenation of each word in words */ 
+/*         exactly once and without any intervening characters. */
+
+        vector<int> findSubstring(string s, vector<string>& words) {
+            unordered_map<string, int> word_count;
+            vector<int> res;
+            if (words.size() == 0)  return res;
+            int len = words[0].size();
+            for (auto word: words) {
+                if (word_count.find(word) == word_count.end()) {
+                    word_count[word] = 1;
+                }
+                else {
+                    ++word_count[word];
+                }
+            }
+            for (int start = 0; start < len; ++start) {
+                int i = start, j = start;
+                while (i < s.size()) {
+                    if (j - i == words.size() * len) {
+                        res.push_back(i);
+                        word_count[s.substr(i, len)] = 1;
+                        i += len;
+                    }
+                    else if (j + len <= s.size()) {
+                        string next = s.substr(j, len);
+                        if (word_count.find(next) != word_count.end() && word_count[next] > 0) {
+                            --word_count[next];
+                            j += len;
+                        }
+                        else if (i != j) {
+                            ++word_count[s.substr(i, len)];
+                            i += len;
+                        }
+                        else {
+                            i += len;
+                            j += len;
+                        }
+                    }
+                    else {
+                        ++word_count[s.substr(i, len)];
+                        i += len;
+                    }
+
+                }
+            }
+            return res;
+
+        }
 };
 
 
