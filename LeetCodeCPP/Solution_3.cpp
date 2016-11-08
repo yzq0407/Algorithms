@@ -168,9 +168,32 @@ class Solution {
             return res;
 
         }
+
+        /* 446. Arithmetic Slices II - Subsequence */
+        /* A sequence of numbers is called arithmetic if it consists of at least three elements */ 
+        /* and if the difference between any two consecutive elements is the same. */
+        
+        int numberOfArithmeticSlices(vector<int>& A) {
+            vector<unordered_map<long, long>> subseq_count(A.size());
+            int count_subseq = 0;
+            for (int i = 0; i < A.size(); ++i) {
+                for (int j = 0; j < i; ++j) {
+                    long diff = static_cast<long>(A[i]) - static_cast<long>(A[j]);
+                    if (subseq_count[i].find(diff) == subseq_count[i].end()) subseq_count[i][diff] = 0;
+                    subseq_count[i][diff] += 1;
+                    if (subseq_count[j].find(diff) != subseq_count[j].end()) {
+                        count_subseq += subseq_count[j][diff];
+                        subseq_count[i][diff] += subseq_count[j][diff];
+                    }
+                }
+            }
+            return count_subseq;
+        }
 };
 
 
 int main() {
+    vector<int> input = {2, 4, 6, 8, 10};
     Solution s;
+    cout << s.numberOfArithmeticSlices(input) << endl;
 }
