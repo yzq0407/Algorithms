@@ -189,6 +189,19 @@ class Solution {
             }
             return count_subseq;
         }
+
+        /* 452. Minimum Number of Arrows to Burst Balloons */
+        int findMinArrowShots(vector<pair<int, int>> &points) {
+            sort(points.begin(), points.end(), [](const pair<int, int> &p1, const pair<int, int> &p2) {
+                    return p1.second != p2.second? p1.second < p2.second: p1.first < p2.first;});
+            int arrow = INT_MIN, count = 0;
+            for (int idx = 0; idx < points.size(); ++idx) {
+                if (arrow != INT_MIN && points[idx].first <= arrow) continue;
+                ++count;
+                arrow = points[idx].second;
+            }
+            return count;
+        }
 };
 
 
