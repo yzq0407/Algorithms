@@ -11,7 +11,7 @@
 
 using namespace std;
 
-
+//Solution 1, use trietree to store all the visited path, get 40/60 score
 class Solution {
 private:
     struct TrieNode {
