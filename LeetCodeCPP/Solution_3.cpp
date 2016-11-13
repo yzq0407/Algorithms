@@ -7,6 +7,7 @@
 #include <string>
 #include <queue>
 #include <cmath>
+#include <set>
 
 using namespace std;
 class Solution {
@@ -202,11 +203,36 @@ class Solution {
             }
             return count;
         }
+
+        /* 456. 132 Pattern */
+        /* Given a sequence of n integers a1, a2, ..., an, a 132 pattern is a subsequence ai, aj, ak such that */
+        /* i < j < k and ai < ak < aj. Design an algorithm that takes a list of n numbers as input and checks */ 
+        /* whether there is a 132 pattern in the list. */
+        bool find132pattern(vector<int> &nums) {
+            if (nums.size() < 3)    return false;
+            vector<int> smaller(nums.size());
+            smaller[0] = INT_MAX;
+            for (int i = 1; i < nums.size(); ++i) {
+                smaller[i] = min(smaller[i - 1], nums[i - 1]);
+            }
+            set<int> tree;
+            tree.insert(nums.back());
+            for (int i = nums.size() - 2; i > 0; --i) {
+                auto ub = tree.lower_bound(nums[i]);
+                if (ub != tree.begin()) {
+                    --ub;
+                    if (*ub > smaller[i])   return true; 
+                }
+                tree.insert(nums[i]);
+            }
+            return false;
+        }
+
 };
 
 
 int main() {
-    vector<int> input = {2, 4, 6, 8, 10};
+    vector<int> input = {3, 1, 4, 2};
     Solution s;
-    cout << s.numberOfArithmeticSlices(input) << endl;
+    cout << s.find132pattern(input) << endl;
 }
