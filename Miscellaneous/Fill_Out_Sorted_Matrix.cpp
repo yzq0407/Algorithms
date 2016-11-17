@@ -71,13 +71,13 @@ public:
     }
 
     ll solve() {
-        //a tuple to represent 
-        vector<int> filled_entry(dimension, 0);
         //for any given tuple (n1, n2, n3, n4, n5), number of solutions will be:
         //S(n1, n2, n3, n4, n5) = S(n1 - 1, n2, n3, n4, n5) + S(n1, n2 - 1, n3, n4, n5) + S(n1, n2, n3 -1, n4, n5)
         // + S(n1, n2, n3, n4 - 1, n5) + S(n1, n2, n3, n4, n5 - 1)
         //Also it need to subject to the rule that any valid tuple must satisfy n1 >= n2 >= n3 >= n4 >= n5
-        vector<int> tuple(dimension);
+
+        //initialize tuple to be all 0s
+        vector<int> tuple(dimension, 0);
         for (int filled = 1; filled <= dimension; ++filled) {
             search_tuple(filled, 0, tuple);
         }
