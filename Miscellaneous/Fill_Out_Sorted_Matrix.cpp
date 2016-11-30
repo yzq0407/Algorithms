@@ -1,4 +1,4 @@
-//Google onsite interview, second round 10/12/2016
+//Some interview question
 
 #include <iostream>
 #include <vector>
