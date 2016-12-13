@@ -227,12 +227,33 @@ class Solution {
             }
             return false;
         }
+        
+        bool isConvex(vector<vector<int>>& points) {
+            if (points.size() <= 3)   return true;
+            int len = points.size();
+            int prev = 0;
+            for (int i = 0; i < points.size(); ++i) {
+                auto p0 = points[i];
+                auto p1 = points[(len + i - 1) % len];
+                auto p2 = points[(len + i - 2) % len];
+                int x1 = p1[0] - p2[0];
+                int y1 = p1[1] - p2[1];
+                int x2 = p0[0] - p2[0];
+                int y2 = p0[1] - p2[1];
+                int curr = (x1 * y2) - (x2 * y1);
+                if (curr * prev < 0)    return false;
+                if (curr != 0) prev = curr;
+            }
+            return true;
+        }
 
 };
 
 
 int main() {
-    vector<int> input = {3, 1, 4, 2};
+    vector<vector<int>> test1 = {{0, 0}, {0, 1}, {1, 1}, {1, 0}};
+    vector<vector<int>> test2 = {{0, 0}, {0, 10}, {10, 10}, {10, 0}, {5, 5}};
     Solution s;
-    cout << s.find132pattern(input) << endl;
+    cout << s.isConvex(test1) << endl;
+    cout << s.isConvex(test2) << endl;
 }
