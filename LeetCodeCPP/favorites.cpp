@@ -1286,17 +1286,51 @@ public:
         return res;
     }
 
-    /* 465. Optimal Account Balancing */
-    /* A group of friends went on holiday and sometimes lent each other money. For example, Alice paid for Bill's lunch for (0. Then later Chris gave Alice $5 for a taxi ride. */
-    /* We can model each transaction as a tuple (x, y, z) which means person x gave person y $z. Assuming Alice, Bill, and Chris are person 0, 1, and 2 respectively (0, 1, 2 */ 
-    /* are the person's ID), the transactions can be represented as [[0, 1, 10], [2, 0, 5]]. */
-            
-    /* Given a list of transactions between a group of people, return the minimum number of transactions required to settle the debt.) */
-    int minTransfers(vector<vector<int>> &transactions) {
-         
+    /* 466. Count The Repetitions */
+    /* Define S = [s,n] as the string S which consists of n connected strings s. For example, ["abc", 3] ="abcabcabc". */
+
+    /* On the other hand, we define that string s1 can be obtained from string s2 if we can remove some characters from s2 */
+    /* such that it becomes s1. For example, “abc” can be obtained from “abdbec” based on our definition, but it can not be obtained from “acbbe”. */
+
+    /* You are given two non-empty strings s1 and s2 (each at most 100 characters long) and two integers 0 ≤ n1 ≤ 106 and 1 ≤ n2 ≤ 106. */
+    /* Now consider the strings S1 and S2, where S1=[s1,n1] and S2=[s2,n2]. Find the maximum integer M such that [S2,M] can be obtained from S1. */
+    int getMaxRepetitions(string s1, int n1, string s2, int n2) {
+        const size_t len1 = s1.size(), len2 = s2.size();
+        typedef pair<int, int> pair_ints;
+        //technically, it is a table to record what is the last s1, s2 position combo we've seen
+        //we will keep on recording such combo, if we happen to see one once again, it is a repeating pattern, we 
+        //can do a shortcut calculation based on that
+        vector<vector<pair_ints>> dp(len1, vector<pair_ints> (len2, make_pair(-1, -1)));
+        //pos1, pos2 means the position in S1, m * S2, in the range of [0, len1 * n1), [0, m * len2 * n2) 
+        int pos1 = 0, pos2 = 0;
+        bool found = false;
+        while (pos1 < len1 * n1) {
+            if (s1[pos1 % len1] != s2[pos2 % len2]) {
+                //not match, increment pos1 only
+                ++pos1;
+            }
+            else {
+                if (!found && dp[pos1 % len1][pos2 % len2].first != -1) {
+                    //shortcut calculation
+                    auto last_pair = dp[pos1 % len1][pos2 % len2];
+                    int last1 = last_pair.first, last2 = last_pair.second;
+                    int diff1 = (len1 * n1 - pos1) / (pos1 - last1) * (pos1 - last1);
+                    int diff2= (len1 * n1 - pos1) / (pos1 - last1) * (pos2 - last2);
+                    pos1 += diff1;
+                    pos2 += diff2;
+                    found = true;
+                }
+                else {
+                    dp[pos1 % len1][pos2 % len2] = make_pair(pos1, pos2);
+                    ++pos1;
+                    ++pos2;
+                }
+            }
+        }
+        return pos2 / (len2 * n2);
+        //------------run time 3ms---------beats 87%---------------------//
     }
 
-    
 }; 
 
 /*     308 Range Sum Query 3D - Mutable */

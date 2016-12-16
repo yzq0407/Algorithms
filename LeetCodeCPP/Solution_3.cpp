@@ -247,6 +247,38 @@ class Solution {
             return true;
         }
 
+        int getMaxRepetitions(const string& s1, int n1, const string& s2, int n2) {
+            const size_t len1 = s1.size(), len2 = s2.size();
+            typedef pair<int, int> pair_ints;
+            vector<vector<shared_ptr<pair_ints>>> dp(len1, vector<shared_ptr<pair_ints>> (len2, nullptr));
+            int pos1 = 0, pos2 = 0;
+            bool found = false;
+            while (pos1 < len1 * n1) {
+                /* cout << pos1 << " " << pos2 << endl; */
+                if (s1[pos1 % len1] != s2[pos2 % len2]) {
+                    ++pos1;
+                }
+                else {
+                    if (!found && dp[pos1 % len1][pos2 % len2]) {
+                        //this is a repeat
+                        auto last_pair = dp[pos1 % len1][pos2 % len2];
+                        int last1 = last_pair -> first, last2 = last_pair -> second;
+                        int diff1 = (len1 * n1 - pos1) / (pos1 - last1) * (pos1 - last1);
+                        int diff2= (len1 * n1 - pos1) / (pos1 - last1) * (pos2 - last2);
+                        pos1 += diff1;
+                        pos2 += diff2;
+                        found = true;
+                    }
+                    else {
+                        dp[pos1 % len1][pos2 % len2] = make_shared<pair_ints>(pos1, pos2);
+                        ++pos1;
+                        ++pos2;
+                    }
+                }
+            }
+            return pos2 / (len2 * n2);
+        }
+
 };
 
 
@@ -254,6 +286,10 @@ int main() {
     vector<vector<int>> test1 = {{0, 0}, {0, 1}, {1, 1}, {1, 0}};
     vector<vector<int>> test2 = {{0, 0}, {0, 10}, {10, 10}, {10, 0}, {5, 5}};
     Solution s;
-    cout << s.isConvex(test1) << endl;
-    cout << s.isConvex(test2) << endl;
+    cout << s.getMaxRepetitions(
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            1000000,
+            "a",
+            1000000) << endl;
+    cout << s.getMaxRepetitions("lovelivenajomusicforever", 100000, "najo", 10) << endl;
 }
