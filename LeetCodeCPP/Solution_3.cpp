@@ -246,23 +246,28 @@ class Solution {
             }
             return true;
         }
-
-        int getMaxRepetitions(const string& s1, int n1, const string& s2, int n2) {
+        
+        
+        int getMaxRepetitions(string s1, int n1, string s2, int n2) {
             const size_t len1 = s1.size(), len2 = s2.size();
             typedef pair<int, int> pair_ints;
-            vector<vector<shared_ptr<pair_ints>>> dp(len1, vector<shared_ptr<pair_ints>> (len2, nullptr));
+            //technically, it is a table to record what is the last s1, s2 position combo we've seen
+            //we will keep on recording such combo, if we happen to see one once again, it is a repeating pattern, we 
+            //can do a shortcut calculation based on that
+            vector<vector<pair_ints>> dp(len1, vector<pair_ints> (len2, make_pair(-1, -1)));
+            //pos1, pos2 means the position in S1, m * S2, in the range of [0, len1 * n1), [0, m * len2 * n2) 
             int pos1 = 0, pos2 = 0;
             bool found = false;
             while (pos1 < len1 * n1) {
-                /* cout << pos1 << " " << pos2 << endl; */
                 if (s1[pos1 % len1] != s2[pos2 % len2]) {
+                    //not match, increment pos1 only
                     ++pos1;
                 }
                 else {
-                    if (!found && dp[pos1 % len1][pos2 % len2]) {
-                        //this is a repeat
+                    if (!found && dp[pos1 % len1][pos2 % len2].first != -1) {
+                        //shortcut calculation
                         auto last_pair = dp[pos1 % len1][pos2 % len2];
-                        int last1 = last_pair -> first, last2 = last_pair -> second;
+                        int last1 = last_pair.first, last2 = last_pair.second;
                         int diff1 = (len1 * n1 - pos1) / (pos1 - last1) * (pos1 - last1);
                         int diff2= (len1 * n1 - pos1) / (pos1 - last1) * (pos2 - last2);
                         pos1 += diff1;
@@ -270,13 +275,55 @@ class Solution {
                         found = true;
                     }
                     else {
-                        dp[pos1 % len1][pos2 % len2] = make_shared<pair_ints>(pos1, pos2);
+                        dp[pos1 % len1][pos2 % len2] = make_pair(pos1, pos2);
                         ++pos1;
                         ++pos2;
                     }
                 }
             }
             return pos2 / (len2 * n2);
+        }
+        
+        /* 471. Encode String with Shortest Length */
+        string encode(const string& s) {
+            unordered_map<string, string> memo;
+            return encode(s, memo);
+        }
+
+        string encode(const string& s, unordered_map<string, string>& memo) {
+            if (memo.find(s) == memo.end()) {
+                string multi = s;
+                for (int repeat = 2; repeat <= s.size(); ++repeat) {
+                    if (s.size() % repeat == 0) {
+                        bool isRepeat = true;
+                        int unitLen = s.size() / repeat;
+                        string unit = s.substr(0, unitLen);
+                        for (int start = unitLen; start < s.size(); start += unitLen) {
+                            if (s.substr(start, unitLen) != unit) {
+                                isRepeat = false;
+                                break;
+                            }
+                        }
+                        if (isRepeat) {
+                            string compress = to_string(repeat) + "[" + encode(unit, memo) + "]";
+                            if (compress.size() < multi.size()) {
+                                multi = compress;
+                            }
+                        }
+                    }
+                }
+                string concat = s;
+                for (int breakPoint = 1; breakPoint < s.size(); ++breakPoint) {
+                    string concat_str = encode(s.substr(0, breakPoint), memo)
+                        + encode(s.substr(breakPoint, s.size() - breakPoint), memo);
+                    if (concat_str.size() < concat.size())  concat = concat_str;
+                }
+
+                if (multi.size() < s.size() && multi.size() <= concat.size())    memo[s] = multi;
+                else if (concat.size() < s.size())  memo[s] = concat;
+                else    memo[s] = s;
+            }
+            return memo[s];
         }
 
 };
@@ -286,10 +333,9 @@ int main() {
     vector<vector<int>> test1 = {{0, 0}, {0, 1}, {1, 1}, {1, 0}};
     vector<vector<int>> test2 = {{0, 0}, {0, 10}, {10, 10}, {10, 0}, {5, 5}};
     Solution s;
-    cout << s.getMaxRepetitions(
-            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            1000000,
-            "a",
-            1000000) << endl;
-    cout << s.getMaxRepetitions("lovelivenajomusicforever", 100000, "najo", 10) << endl;
+    cout << s.encode("aaaaa") << endl;
+    cout << s.encode("aaa") << endl;
+    cout << s.encode("aabcaabcd") << endl;
+    cout << s.encode("abbbabbbcabbbabbbc") << endl;
+    cout << s.encode("aaaaaaaaaa") << endl;
 }
