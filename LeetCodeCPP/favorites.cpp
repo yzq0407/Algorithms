@@ -1330,7 +1330,90 @@ public:
         return pos2 / (len2 * n2);
         //------------run time 3ms---------beats 87%---------------------//
     }
+    /* 465. Optimal Account Balancing */
+    /* A group of friends went on holiday and sometimes lent each other money. */ 
+    /* For example, Alice paid for Bill's lunch for 0. Then later Chris gave Alice $5 for a taxi ride. */ 
+    /* We can model each transaction as a tuple (x, y, z) which means person x gave person y $z. */ 
+    /* Assuming Alice, Bill, and Chris are person 0, 1, and 2 respectively (0, 1, 2 are the person's ID), */ 
+    /* the transactions can be represented as [[0, 1, 10], [2, 0, 5]]. */
 
+    /* Given a list of transactions between a group of people, return the minimum number of transactions required to settle the debt. */
+    int minTransfers(vector<vector<int>>& transactions) {
+        unordered_map<int, int> balances;
+        for (auto& transaction: transactions) {
+            int first = transaction[0], second = transaction[1], debt = transaction[2];
+            if (balances.find(first) == balances.end()) balances[first] = 0;
+            if (balances.find(second) == balances.end()) balances[second] = 0;
+            balances[first] += debt;
+            balances[second] -= debt;
+        }
+        vector<int> creditors;
+        vector<int> debtors;
+        for (auto it = balances.begin(); it != balances.end(); ++it) {
+            if (it->second > 0) {
+                creditors.push_back(it->second);
+            }
+            else if(it->second < 0) {
+                debtors.push_back(-it->second);
+            }
+        }
+        sort(creditors.begin(), creditors.end());
+        sort(debtors.begin(), debtors.end());
+
+        int matchedCount = 0;
+        for (int i = 0; i < creditors.size(); ++i) {
+            int count = 0;
+            if (getMatchedCount(creditors, debtors, i, 0, count))
+                matchedCount += count;
+        }
+        for (int i = 0; i < debtors.size(); ++i) {
+            int count = 0;
+            if (getMatchedCount(debtors, creditors, i, 0, count)) 
+                matchedCount += count;
+        }
+        //match the rest transfers
+        int i = 0, j = 0;
+        while (i < creditors.size() && j < debtors.size()) {
+            if (creditors[i] == 0) {
+                ++i;
+                continue;
+            }
+            if (debtors[j] == 0) {
+                ++j;
+                continue;
+            }
+            if (creditors[i] < debtors[j]) 
+                debtors[j] -= creditors[i++];
+            else if (creditors[i] > debtors[j])
+                creditors[i] -= debtors[j++];
+            else {
+                creditors[i++] = 0;
+                debtors[j++] = 0;
+            }
+            ++matchedCount;
+        }
+        return matchedCount;
+        //-----------run time 0ms, beat 85.13%---------------------
+    }
+
+    bool getMatchedCount(vector<int>& creditors, vector<int>& debtors, int pos_c, int pos_d, int& count) {
+        if (creditors[pos_c] == 0)  return true;
+        if (pos_d >= debtors.size() || debtors[pos_d] > creditors[pos_c]) return false;
+        //either take d or not take d
+        //take pos_d
+        if (debtors[pos_d] != 0) {
+            creditors[pos_c] -= debtors[pos_d];
+            int temp_debt = debtors[pos_d];
+            debtors[pos_d] = 0;
+            if (getMatchedCount(creditors, debtors, pos_c, pos_d + 1, ++count)) return true;
+            else {
+                debtors[pos_d] = temp_debt;
+                creditors[pos_c] += debtors[pos_d];
+                --count;
+            }
+        }
+        return getMatchedCount(creditors, debtors, pos_c, pos_d + 1, count);
+    }
 }; 
 
 /*     308 Range Sum Query 3D - Mutable */
@@ -1643,10 +1726,13 @@ class WordDictionary {
 
 int main() {
     Solution s;
-    vector<int> org = {4, 1, 5, 2, 6, 3};
-    vector<vector<int>> seqs1 = {{1, 2}, {1, 3}};
-    vector<vector<int>> seqs2 = {{1, 2}, {1, 3}, {2, 3}};
-    vector<vector<int>> seqs3 = {{5, 2, 6, 3}, {4, 1, 5, 2}};
-    cout << s.sequenceReconstruction(org, seqs3) << endl;
+    vector<vector<int>> balances_1 = {{0, 1, 10}, {2, 0, 5}};
+    vector<vector<int>> balances_2 = {{0, 1, 10}, {2, 0, 5}, {1, 0, 1}, {1, 2, 5}};
+    vector<vector<int>> balances_3 = {{1, 5, 8}, {8, 9, 8}, {2, 3, 9}, {4, 3, 1}};
+    vector<vector<int>> balances_4 = {{0, 1, 5}, {2, 3, 1}, {2, 0, 1}, {4, 0, 2}};
+    vector<vector<int>> balances_5 = {{1, 8, 1}, {1, 13, 21}, {2, 8, 10}, {3, 9, 20},
+        {4, 10, 61}, {5, 11, 61}, {6, 12, 59}, {7, 13, 60}};
+
+    cout << s.minTransfers(balances_5) << endl;
 }
 
