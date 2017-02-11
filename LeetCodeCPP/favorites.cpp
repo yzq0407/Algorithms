@@ -1724,15 +1724,150 @@ class WordDictionary {
         }
 };
 
+/* 460. LFU Cache */
+/* Design and implement a data structure for Least Frequently Used (LFU) cache. */ 
+/* It should support the following operations: get and put. */
+
+/* get(key) - Get the value (will always be positive) of the key if the key exists in the cache, otherwise return -1. */
+/* put(key, value) - Set or insert the value if the key is not already present. */ 
+/* When the cache reaches its capacity, it should invalidate the least frequently used item before inserting a new item. */ 
+/* For the purpose of this problem, when there is a tie (i.e., two or more keys that have the same frequency), */
+/* the least recently used key would be evicted */
+class LFUCache {
+    public:
+        explicit LFUCache (int capacity): cap(capacity), pivot(new LFUNode(0, 0, -1)){
+            pivot->prev = pivot;
+            pivot->next = pivot;
+        }
+        
+        int get(int key) {
+            if (key_to_node.find(key) == key_to_node.end())
+                return -1;
+            LFUNode* node = key_to_node[key];
+            updateNode(node);
+            return node->value;
+        }
+
+        void put(int key, int value) {
+            if (cap == 0)   return;
+            //no key presented, insert at the end
+            if (key_to_node.find(key) == key_to_node.end()) {
+                LFUNode* tail = new LFUNode(key, value, 0);
+                key_to_node[key] = tail;
+                if (key_to_node.size() > cap) {
+                    LFUNode* old_tail = pivot->prev;
+                    key_to_node.erase(old_tail->key);
+                    unlink(old_tail);
+                    if (freq_to_node[old_tail->freq] == old_tail) {
+                        freq_to_node.erase(old_tail->freq);
+                    }
+                    delete old_tail;
+                }
+                link(tail, pivot);
+                updateNode(tail);
+            }
+            //otherwise update value
+            else {
+                key_to_node[key]->value = value;
+                updateNode(key_to_node[key]);
+            }
+        }
+
+        LFUCache(const LFUCache& other) = delete;
+        LFUCache& operator=(const LFUCache& rhs) = delete;
+        ~LFUCache() {
+            //delete all node in doubly linked list
+            auto node_ptr = pivot->next;
+            while (node_ptr != pivot) {
+                auto temp = node_ptr->next;
+                delete node_ptr;
+                node_ptr = temp;
+            }
+            delete pivot;
+        }
+
+    private:
+        struct LFUNode {
+            LFUNode* prev;
+            LFUNode* next;
+            int key;
+            int value;
+            int freq;
+            LFUNode(int k, int v, int f): prev(nullptr), next(nullptr), key(k), value(v), freq(f) {}
+        };
+
+        //frequency to node, if two node ties in frequency, save the preivous one in doubly linkedlist
+        unordered_map<int, LFUNode*> freq_to_node;
+        //key to node mapping
+        unordered_map<int, LFUNode*> key_to_node;
+        //doubly linked list(circular), initialize with one node
+        LFUNode* pivot;
+
+        const int cap;
+
+        void unlink(LFUNode* node) {
+            if (node->prev) {
+                node->prev->next = node->next;
+                node->next->prev = node->prev;
+            }
+        }
+
+        void link(LFUNode* node, LFUNode* behind) {
+            node->next = behind;
+            node->prev = behind->prev;
+            behind->prev->next = node;
+            behind->prev = node;
+        }
+
+        void updateNode(LFUNode* node) {
+            if (freq_to_node.find(node->freq) != freq_to_node.end()) {
+                //two senario, its the node itself, or someother node
+                if (freq_to_node[node->freq] == node) {
+                   if (node->next->freq == node->freq) {
+                       freq_to_node[node->freq] = node->next;
+                   }
+                   else {
+                       freq_to_node.erase(node->freq);
+                   }
+                }
+                else {
+                    unlink(node);
+                    link(node, freq_to_node[node->freq]);
+                }
+            }
+            ++node->freq;
+            if (freq_to_node.find(node->freq) != freq_to_node.end()) {
+                unlink(node);
+                auto temp = freq_to_node[node->freq];
+                link(node, temp);
+            }
+            freq_to_node[node->freq] = node;
+        }
+        //------------run time 109ms, beats 96.00%------------------
+};
+
 int main() {
-    Solution s;
-    vector<vector<int>> balances_1 = {{0, 1, 10}, {2, 0, 5}};
-    vector<vector<int>> balances_2 = {{0, 1, 10}, {2, 0, 5}, {1, 0, 1}, {1, 2, 5}};
-    vector<vector<int>> balances_3 = {{1, 5, 8}, {8, 9, 8}, {2, 3, 9}, {4, 3, 1}};
-    vector<vector<int>> balances_4 = {{0, 1, 5}, {2, 3, 1}, {2, 0, 1}, {4, 0, 2}};
-    vector<vector<int>> balances_5 = {{1, 8, 1}, {1, 13, 21}, {2, 8, 10}, {3, 9, 20},
-        {4, 10, 61}, {5, 11, 61}, {6, 12, 59}, {7, 13, 60}};
-
-    cout << s.minTransfers(balances_5) << endl;
+    /* LFUCache cache(2); */
+    /* cache.put(1, 1); */
+    /* cache.put(2, 2); */
+    /* cout << cache.get(1) << endl;       // returns 1 */
+    /* cache.put(3, 3);    // evicts key 2 */
+    /* cout << cache.get(2) << endl;       // returns -1 (not found) */
+    /* cout << cache.get(3) << endl;       // returns 3. */
+    /* cache.put(4, 4);    // evicts key 1. */
+    /* cout << cache.get(1) << endl;       // returns -1 (not found) */
+    /* cout << cache.get(3) << endl;       // returns 3 */
+    /* cout << cache.get(4) << endl;       // returns 4 */
+    LFUCache cache(3);
+    cache.put(2, 2);
+    cache.put(1, 1);
+    cout << cache.get(2) << endl;       // returns 1
+    cout << cache.get(1) << endl;       // returns 1
+    cout << cache.get(2) << endl;       // returns 1
+    cache.put(3, 3);    // evicts key 2
+    cache.put(4, 4);    // evicts key 1.
+    cout << cache.get(3) << endl;       // returns 3.
+    cout << cache.get(2) << endl;       // returns -1 (not found)
+    cout << cache.get(1) << endl;       // returns -1 (not found)
+    cout << cache.get(4) << endl;       // returns 4
 }
-
