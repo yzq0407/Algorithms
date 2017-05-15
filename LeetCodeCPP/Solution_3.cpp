@@ -326,16 +326,74 @@ class Solution {
             return memo[s];
         }
 
+        /* 480. Sliding Window Median */
+        vector<double> medianSlidingWindow(const vector<int>& nums, int k) {
+            multiset<int> min_set;
+            multiset<int> max_set;
+            vector<double> res;
+            bool is_odd = k % 2;
+            if (k > nums.size())    return res;
+            res.reserve(nums.size() - k + 1);
+            for (int idx = 0; idx < nums.size(); ++idx) {
+                if (idx >= k) {
+                    //need to erase a number
+                    double last_median = res.back();
+                    if (nums[idx - k] <= last_median) {
+                        max_set.erase(max_set.find(nums[idx - k]));
+                    }
+                    else {
+                        min_set.erase(min_set.find(nums[idx - k]));
+                    }
+                }
+                //insert, depends on the current median
+                if (max_set.empty() && min_set.empty()) max_set.insert(nums[idx]);
+                else if (!max_set.empty()) {
+                    if (nums[idx] > *max_set.rbegin()) {
+                        min_set.insert(nums[idx]);
+                    }
+                    else {
+                        max_set.insert(nums[idx]);
+                    }
+                }
+                else {
+                    if (nums[idx] < *min_set.begin()) {
+                        max_set.insert(nums[idx]);
+                    }
+                    else {
+                        min_set.insert(nums[idx]);
+                    }
+                }
+                //balancing
+                while (max_set.size() > min_set.size() + 1) {
+                    auto max_iter = --max_set.end();
+                    min_set.insert(*max_iter);
+                    max_set.erase(max_iter);
+                }
+                while (min_set.size() > max_set.size()) {
+                    auto min_iter = min_set.begin();
+                    max_set.insert(*min_iter);
+                    min_set.erase(min_iter);
+                }
+                //find median
+                if (idx >= k - 1) {
+                    if (is_odd) {
+                        res.push_back(*max_set.rbegin());
+                    }
+                    else {
+                        res.push_back(static_cast<double>((long long)*max_set.rbegin() + (long long)*min_set.begin()) / 2);
+                    }
+                }
+            }
+            return res;
+        }
 };
 
 
 int main() {
-    vector<vector<int>> test1 = {{0, 0}, {0, 1}, {1, 1}, {1, 0}};
-    vector<vector<int>> test2 = {{0, 0}, {0, 10}, {10, 10}, {10, 0}, {5, 5}};
+    vector<int> nums {7, 0, 3, 9, 9, 9, 1, 7, 2, 3};
+    vector<int> nums2 {INT_MAX, INT_MAX};
     Solution s;
-    cout << s.encode("aaaaa") << endl;
-    cout << s.encode("aaa") << endl;
-    cout << s.encode("aabcaabcd") << endl;
-    cout << s.encode("abbbabbbcabbbabbbc") << endl;
-    cout << s.encode("aaaaaaaaaa") << endl;
+    for (const double& num: s.medianSlidingWindow(nums, 6)) {
+        cout << num << endl;
+    }
 }
